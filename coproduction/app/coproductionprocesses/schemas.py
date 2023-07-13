@@ -20,6 +20,7 @@ class CoproductionProcessBase(BaseModel):
     organization_desc: Optional[str]
     organization_id: Optional[uuid.UUID]
     challenges: Optional[str]
+    requirements: Optional[str]
     status: Optional[Status]
     incentive_and_rewards_state: Optional[bool]
 
@@ -27,11 +28,13 @@ class CoproductionProcessBase(BaseModel):
     hasAddAnOrganization : Optional[bool]
     skipResourcesStep : Optional[bool]
     hideguidechecklist : Optional[bool]
-
     intergovernmental_model: Optional[str]
-
+    cloned_from_id: Optional[uuid.UUID]
     is_part_of_publication: Optional[bool]
+    is_public: Optional[bool]
     game_id: Optional[str]
+    rating: Optional[float]
+    ratings_count: Optional[int]
 
 
 class CoproductionProcessCreate(CoproductionProcessBase):
@@ -47,8 +50,13 @@ class CoproductionProcessPatch(CoproductionProcessCreate):
     incentive_and_rewards_state: Optional[bool]
     intergovernmental_model: Optional[str]
     is_part_of_publication: Optional[bool]
+    is_public: Optional[bool]
     language: Optional[Languages]
     game_id: Optional[str]
+    tags: Optional[List]
+    rating: Optional[float]
+    ratings_count: Optional[int]
+
 
     #Optional field defined just by the user:
     hasAddAnOrganization : Optional[bool]
@@ -75,12 +83,12 @@ class CoproductionProcessOut(CoproductionProcess):
     administrators_ids: List[str]
     current_user_participation: list
     
-    tags_ids: List[str]
+    tags: List
 
     @validator('administrators_ids', pre=True)
     def administrators_ids_to_list(cls, v):
         return list(v)
     
-    @validator('tags_ids', pre=True)
-    def tags_ids_to_list(cls, v):
-        return list(v)
+    # @validator('tags_ids', pre=True)
+    # def tags_ids_to_list(cls, v):
+    #     return list(v)

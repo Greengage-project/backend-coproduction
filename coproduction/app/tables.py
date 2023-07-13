@@ -27,3 +27,7 @@ team_applies_association_table = Table('team_applies', BaseModel.metadata,
 coproductionprocess_tags_association_table = Table('coproductionprocess_tags', BaseModel.metadata,
                                                    Column('coproductionprocess_id', ForeignKey('coproductionprocess.id', ondelete="CASCADE"), primary_key=True),
                                                    Column('tag_id', ForeignKey('tag.id', ondelete="CASCADE"), primary_key=True))
+
+coproductionprocess_keywords_association_table = Table('story_keywords', BaseModel.metadata,
+                                                   Column('story_id', ForeignKey('story.id', ondelete="CASCADE"), primary_key=True),
+                                                   Column('keyword_id', ForeignKey('keyword.id', ondelete="CASCADE"), primary_key=True))

@@ -19,7 +19,7 @@ from app.utils import RoleTypes
 class Team(BaseModel):
     """Team Class contains standard information for a Team."""
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String, unique=False, nullable=False)
     description = Column(String, nullable=False)
     logotype = Column(String, nullable=True)
     type = Column(Enum(RoleTypes, create_constraint=False, native_enum=False), nullable=False)

@@ -15,31 +15,32 @@ from app.sockets import socket_manager
 from uuid_by_string import generate_uuid
 from app import schemas
 
+
 class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationPatch]):
     async def get_multi(self, db: Session, user: User) -> Optional[List[Notification]]:
         return db.query(Notification).all()
 
+    # Get all notifications by Event:
 
-    #Get all notifications by Event:
     async def get_notification_by_event(self, db: Session, event: str, language: str) -> Optional[List[UserNotification]]:
-        #print("Entra en notification  by event")
-        #print(event)
-        #print(language)
+        # print("Entra en notification  by event")
+        # print(event)
+        # print(language)
         notification = db.query(Notification).filter(and_(
-                                                    models.Notification.event==event,
-                                                    models.Notification.language==language
-                                                    )).first()
-        #print(notification)
+            models.Notification.event == event,
+            models.Notification.language == language
+        )).first()
+        # print(notification)
         return notification
 
     async def get_notification_by_id(self, db: Session, id:  uuid.UUID) -> Optional[List[UserNotification]]:
-        notification = db.query(Notification).filter(models.Notification.id==id).first()
+        notification = db.query(Notification).filter(
+            models.Notification.id == id).first()
         return notification
-
 
     async def create(self, db: Session, obj_in: NotificationCreate) -> Notification:
         obj_in_data = jsonable_encoder(obj_in)
-        
+
         db_obj = Notification(**obj_in_data)
 
         db.add(db_obj)
@@ -72,7 +73,6 @@ class CRUDNotification(CRUDBase[Notification, NotificationCreate, NotificationPa
         db.refresh(db_obj)
         await self.log_on_update(db_obj)
         return db_obj
-
 
 
 exportCrud = CRUDNotification(Notification)

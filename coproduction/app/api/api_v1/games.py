@@ -26,7 +26,8 @@ async def list_games() -> Any:
     Retrieve games.
     """
     response = requests.get(f"http://{serviceName}{PATH}")
-    return response.json()
+    
+    return json.loads(response.text)
 
 
 @router.get("/{process_id}")
@@ -38,8 +39,8 @@ async def get_game(
     Retrieve game by process_id.
     """
     response = requests.get(f"http://{serviceName}{PATH}/processId/{process_id}")
+    
     return response.json()
-
 
 @router.post("/{process_id}")
 async def set_game(
@@ -58,6 +59,8 @@ async def set_game(
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    if not taskList:
+        raise HTTPException(status_code=400, detail="TaskList not found")
     data = {
         "_id": "null",
         "name": "complexityGame",
@@ -82,7 +85,64 @@ async def set_game(
         db.commit()
         db.refresh(coproductionprocess)
 
-    return response.json()
+    return response.text
+
+
+@router.put("/{process_id}")
+async def update_game(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    process_id: uuid.UUID,
+    task: dict
+) -> Any:
+    """
+    Update game by process_id.
+    """
+
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not coproductionprocess.game_id:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    task = task['task']
+    game = await get_game(process_id=process_id)
+    taskList = game[0]['taskList']
+    taskList.append({
+        'id': task['id'],
+        'management': task['management'],
+        'development': task['development'],
+        'exploitation': task['exploitation'],
+        'completed': False,
+        'subtaskList': [],
+        'players': []
+    })
+
+    data = {
+        "active": True,
+        "id": coproductionprocess.game_id,
+        "name": "complexityGame",
+        "processId": str(coproductionprocess.id),
+        "filename": "game_1.json",
+        "tagList": [
+                "process1",
+                "process3"
+        ],
+        "taskList": taskList
+
+    }
+
+    response = requests.put(f"http://{serviceName}{PATH}",
+                            json=data,
+                            headers={
+                                'Content-type': 'application/json',
+                                'Accept': '*/*'
+                            })
+
+    return response.text
 
 
 @router.delete("/{process_id}")
@@ -109,7 +169,7 @@ async def delete_game(
                                    'Accept': '*/*'
                                })
 
-    return response
+    return response.text
 
 
 @router.get("/{process_id}/leaderboard")
@@ -163,7 +223,6 @@ async def get_task(
                                 'Content-type': 'application/json',
                                 'Accept': '*/*'
                             })
-
     return response.json()
 
 
@@ -219,7 +278,9 @@ async def add_claim(
     - name
     - development
     """
-    print(data)
+    # # print(data.json())
+    # json_object = json.dumps(data, indent = 4)
+    # print(json_object)
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
@@ -264,5 +325,57 @@ async def complete_task(
                                 'Content-type': 'application/json',
                                 'Accept': '*/*'
                             })
+
+    return response.json()
+
+
+@router.delete("/{process_id}/{task_id}/revert")
+async def revert_task(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    process_id: uuid.UUID,
+    task_id: uuid.UUID,
+) -> Any:
+    """
+    Complete task by process_id and task_id.
+    """
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not coproductionprocess.game_id:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    # Revert claim
+    response = requests.put(f"http://{serviceName}{PATH}/{coproductionprocess.game_id}/task/{task_id}/revert",
+                            headers={
+                                'Content-type': 'application/json',
+                                'Accept': '*/*'
+                            })
+
+    # Get task
+    task = requests.get(f"http://{serviceName}{PATH}/{coproductionprocess.game_id}/task/{task_id}",
+                        headers={
+                            'Content-type': 'application/json',
+                            'Accept': '*/*'
+                        })
+
+    # Delete players
+    for player in task.json()['players']:
+        data = {
+            "development": 0,
+            "exploitation": 0,
+            "id": player['id'],
+            "management": 0,
+            "name": "string"
+        }
+        requests.delete(f"http://{serviceName}{PATH}/{coproductionprocess.game_id}/task/{task_id}/removePlayer",
+                        json=data,
+                        headers={
+                            'Content-type': 'application/json',
+                            'Accept': '*/*'
+                        })
 
     return response.json()

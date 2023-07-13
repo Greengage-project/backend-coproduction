@@ -6,20 +6,20 @@ from pydantic import BaseModel
 
 
 class TagBase(BaseModel):
-    id: uuid.UUID
+    name: str
+    description: Optional[str]
 
 
 class TagCreate(TagBase):
-    name_translations: dict
-    description_translations: dict
-
-
-
-class TagPatch(TagCreate):
     pass
 
 
+class TagPatch(TagCreate):
+    name: Optional[dict]
+
+
 class Tag(TagBase):
+    id: uuid.UUID
     name: str
     description: Optional[str]
 

@@ -38,17 +38,19 @@ async def create_team(
     """
     Create new team.
     """
-    team = await crud.team.get_by_name(db=db, name=team_in.name)
-    if not team:
-        if team_in.organization_id and await crud.team.can_create(db=db, organization_id=team_in.organization_id, user=current_user):
-            #print('LLAMA AL POSR CREATE TEAM!!!!!!!!!!')
-            return await crud.team.create(db=db, obj_in=team_in, creator=current_user)
-        else:
-            raise HTTPException(
-                status_code=403, detail="You can not create a team for this organization")
-
-    raise HTTPException(status_code=400, detail="Team already exists")
-
+    teams = await crud.team.get_multi_by_name(db=db, name=team_in.name)
+    if teams:
+        for team in teams:
+            if team.organization_id == team_in.organization_id:
+                raise HTTPException(status_code=400, detail="Team already exists")
+    
+    if team_in.organization_id and await crud.team.can_create(db=db, organization_id=team_in.organization_id, user=current_user):
+        #print('LLAMA AL POSR CREATE TEAM!!!!!!!!!!')
+        return await crud.team.create(db=db, obj_in=team_in, creator=current_user)
+    else:
+        raise HTTPException(
+            status_code=403, detail="You can not create a team for this organization")
+            
 
 @router.post("/{id}/logotype", response_model=schemas.TeamOutFull)
 async def set_logotype(
@@ -94,6 +96,78 @@ async def add_user(
             raise HTTPException(status_code=404, detail="User not found")
         raise HTTPException(status_code=403, detail="You do not have permission")
     raise HTTPException(status_code=404, detail="Team not found")
+
+
+
+@router.post("/addtoobservers", response_model=schemas.TeamOutFull)
+async def add_to_observers(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_user),
+    data: schemas.CoproductionProcessAddToObservers
+) -> Any:
+   
+    #Get the coproduction process:
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=data.coproduction_process_id)
+    
+    #Create Interlink Organization
+    #Ask if the organization exists:
+    if not (organization := await crud.organization.get_by_name_translations_value(db=db, name_translations='Interlink-Platform')):
+        #print('Organization dont exist and is created.')
+        #Si no existe la creo:
+        obj_in = { 'name_translations': { "en": "Interlink-Platform",
+                                          "es": "Interlink-Platform",
+                                          "lv": "Interlink-Platform",
+                                          "it": "Interlink-Platform" },
+                   'logotype': '/static/platform/interlink.jpg',
+                   'default_team_type': 'public_administration',
+                   'team_creation_permission': 'administrators',
+                   'public': False}
+        organization = await crud.organization.create(db=db, obj_in=obj_in, creator=coproductionprocess.creator) 
+
+
+   
+    labelTeam = "_".join(coproductionprocess.name.split())
+
+
+    #Create observers team exists for this coproduction process:
+    if not (team := await crud.team.get_by_name(db=db, name='Observers_'+labelTeam)):
+        #print('Team Observers for the process dont exist and create it.')
+        
+        #If it does not exists I create it:
+        obj_in = {   'name': 'Observers_'+labelTeam,
+                     'description': '',
+                     'organization_id': organization.id,
+                     'type': 'public_administration',
+                     'logotype': '/static/platform/externalTeam.png',
+                     'user_ids': []}
+        team = await crud.team.create(db=db, obj_in=obj_in, creator=coproductionprocess.creator)
+
+    
+    #Add user to observers team:
+    if not current_user in team.users:
+        #print('Add User to team observers.')
+        await crud.team.add_user(db=db, team=team, user=current_user)
+    
+    #Add permission to the team over the task wehere the assets is:
+    if (asset := await crud.asset.get(db=db, id=data.asset_id)):
+        print('Asset exists.')
+        treeitem = await crud.treeitem.get(db=db, id=asset.task_id)
+        
+        #Ask if the permission exists:
+        if not (permission := await crud.permission.get_for_user_and_treeitem_async(db=db, user=current_user, treeitem=treeitem)):
+            print('Permission for this asset dont exist and create it.')
+            if(task := await crud.task.get(db=db, id=asset.task_id)):
+                #If dont have permission over task create it:
+                obj_in = {'access_assets_permission': True,
+                        'team_id': team.id,
+                        'treeitem_id': task.id,
+                        'coproductionprocess_id': coproductionprocess.id}
+                
+                await crud.permission.create(db=db, obj_in=obj_in, creator=current_user, notifyAfterAdded=False)
+                print('Permission created.')
+
+    return team
 
 
 @router.delete("/{id}/users/{user_id}", response_model=schemas.TeamOutFull)

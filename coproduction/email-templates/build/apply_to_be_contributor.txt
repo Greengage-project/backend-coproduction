@@ -1,0 +1,11 @@
+** A user request to be part of the co-production process.
+------------------------------------------------------------
+
+Follow the link to take an action.
+Let's go to {{ coproductionprocess_name }} ({{ link }})
+
+The following is the razon why the user {{ user_name }} ({{ user_email }}) requested the co-production process:
+
+{{ razon }}
+
+Take an action ({{ link }})

@@ -1,0 +1,6 @@
+** A new user has applied to your team
+------------------------------------------------------------
+
+{{ user_name }} has applied to join {{ team_name }} team.
+Follow the link to add them to the team.
+Accept the apply ({{ link }}).

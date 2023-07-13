@@ -19,6 +19,7 @@ class UserNotification(BaseModel):
     notification_id = Column(UUID(as_uuid=True), ForeignKey("notification.id", use_alter=True, ondelete='SET NULL'), nullable=False)
     channel = Column(Enum(ChannelTypes, create_constraint=False, native_enum=False), nullable=False)
     state = Column(Boolean, nullable=False, default=False)
+    is_archived = Column(Boolean, nullable=True, default=False)
 
     coproductionprocess_id = Column(UUID(as_uuid=True), nullable=True)
 

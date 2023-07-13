@@ -5,6 +5,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Date,
     Text,
@@ -13,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy_utils import aggregated
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from app.general.db.base_class import Base as BaseModel
 from app.config import settings
 from app.phases.models import Phase
@@ -34,6 +35,7 @@ class CoproductionProcess(BaseModel):
     idea = Column(Text, nullable=True)
     organization_desc = Column(Text, nullable=True)
     challenges = Column(Text, nullable=True)
+    requirements = Column(Text, nullable=True)
 
     #Active Optional Modules
     incentive_and_rewards_state =Column(Boolean,nullable=True)
@@ -48,9 +50,14 @@ class CoproductionProcess(BaseModel):
     intergovernmental_model =Column(String,nullable=True)
 
     is_part_of_publication = Column(Boolean,nullable=True)
+    is_public = Column(Boolean,nullable=True)
 
     status = Column(Enum(Status, create_constraint=False,
                     native_enum=False), default=Status.in_progress)
+    
+    # 1 digit for decimals
+    rating= Column(Numeric(2, 1), default=0)
+    ratings_count = Column(Integer, default=0) 
 
 
     # created by
@@ -97,7 +104,10 @@ class CoproductionProcess(BaseModel):
     
     
     stories = association_proxy("coproductionprocess_story_associations", "story")
-
+    
+    cloned_from_id = Column(UUID(as_uuid=True), ForeignKey('coproductionprocess.id', ondelete='CASCADE', name='fk_copro_id_cloned_from'), nullable=True)
+    cloned_to = relationship("CoproductionProcess", backref=backref("cloned_from", remote_side=[id]))
+    
     @aggregated('children', Column(Date))
     def end_date(self):
         return func.max(Phase.end_date)
@@ -141,3 +151,38 @@ class CoproductionProcess(BaseModel):
                             if not task.disabled_on:
                                 res.append(task.id)
         return res
+    
+
+
+    # Define the serialize function
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'schema_used': str(self.schema_used),
+            'language': self.language,
+            'name': self.name,
+            'description': self.description,
+            'logotype': self.logotype,
+            'aim': self.aim,
+            'idea': self.idea,
+            'organization_desc': self.organization_desc,
+            'challenges': self.challenges,
+            'requirements': self.requirements,
+            'incentive_and_rewards_state': self.incentive_and_rewards_state,
+            'hasAddAnOrganization': self.hasAddAnOrganization,
+            'skipResourcesStep': self.skipResourcesStep,
+            'hideguidechecklist': self.hideguidechecklist,
+            'intergovernmental_model': self.intergovernmental_model,
+            'is_part_of_publication': self.is_part_of_publication,
+            'is_public': self.is_public,
+            'status': self.status,
+            'rating': str(self.rating),
+            'ratings_count': self.ratings_count,
+            'administrators': [admin.email for admin in self.administrators],
+            'tags': [str(tag.name) for tag in self.tags],
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'logotype_link': self.logotype_link,
+
+        }
+

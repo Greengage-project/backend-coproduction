@@ -33,8 +33,13 @@ async def list_stories(
     """
     Retrieve stories.
     """
-    #print("La busqueda es:")
-    #print(search)
+    # print("La busqueda es:")
+    # print(search)
+    # print("El rating es:")
+    # print(rating)
+    # print("El keyword es:")
+    # print(keyword)
+    
     return await crud.story.get_multiDict(db, search=search,  rating=rating,  language=language, keyword=keyword)
 
 # @router.get("", response_model=List[schemas.StoryOutFull])
@@ -102,7 +107,6 @@ async def create_story(
     newStory.rating=story_in['rating']
     newStory.logotype=story_in['logotype']
     newStory.coproductionprocess_cloneforpub_id=story_in['coproductionprocess_cloneforpub_id']
-
 
     # Set the flag in the Coproduction Process to identify it is from catalogue
     coproductionprocess=await crud.coproductionprocess.get(db=db, id=story_in['coproductionprocess_cloneforpub_id'])
@@ -178,4 +182,22 @@ async def delete_story(
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
     return await crud.story.remove(db=db, id=id)
+
+@router.post("/{id}/addKeyword")
+async def add_keyword(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: uuid.UUID,
+    current_user: models.User = Depends(deps.get_current_active_user),
+    keyword: schemas.Keyword,
+) -> Any:
+    """
+    Add keyword to coproductionprocess.
+    """
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    return await crud.coproductionprocess.add_keyword(db=db, db_obj=coproductionprocess, keyword=keyword)
 

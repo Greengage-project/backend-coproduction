@@ -1,0 +1,7 @@
+
+** {{ project_name }} - New Account
+------------------------------------------------------------
+You have a new account:
+Username: {{ username }}
+Password: {{ password }}
+Go to the process ({{ link }})

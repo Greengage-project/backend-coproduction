@@ -1,5 +1,8 @@
 import uuid
-
+from sqlalchemy import (
+    Integer,
+    Numeric,
+)
 from sqlalchemy import Date, Column, ForeignKey, String, Table, Integer, func, Boolean, Enum, Text, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.dialects.postgresql import JSONB
@@ -13,6 +16,9 @@ from sqlalchemy.orm import Session
 from app.utils import ChannelTypes
 from app.utils import ClaimTypes
 from app.coproductionprocesses.models import CoproductionProcess
+from app.ratings.models import Rating
+from app.tables import coproductionprocess_keywords_association_table
+
 
 class Story(BaseModel):
     """Association Class contains for a Notification and CoproductionProcess."""
@@ -26,8 +32,18 @@ class Story(BaseModel):
     #Json object with information relevant to a story:
     data_story = Column(JSONB, nullable=True)
 
-    rating = Column(Integer)
+    # 1 digit for decimals
+    rating= Column(Numeric(2, 1), default=0)
+    ratings_count = Column(Integer, default=0) 
 
+    # Keywords
+    keywords = relationship(
+        'Keyword',
+        secondary=coproductionprocess_keywords_association_table,
+        backref='stories',
+    )
+    keywords_ids = association_proxy('keywords', 'id')
+    
     coproductionprocess = relationship('CoproductionProcess', back_populates="coproductionprocess_story_associations")
     published_date = Column(Date, nullable=True)
     

@@ -15,8 +15,11 @@ from app.notificationsManager import notification_manager
 from app.assets.schemas import *
 from app.models import CoproductionProcessNotification
 from sqlalchemy import or_, and_
+from app.models import UserNotification
 
-from app.general.emails import send_team_email
+from app.general.emails import send_email, send_team_email
+
+import html
 
 router = APIRouter()
 
@@ -248,6 +251,34 @@ async def create_copro_notification(
         if crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
             for team_id in data.listTeams:
                 if (team := await crud.team.get(db=db, id=team_id)):
+
+                    for user_id in team.user_ids:
+                        if (user := await crud.user.get(db=db, id=user_id)):
+                             #Lets create a notification in-app of the solicitude.
+                            notification = await crud.notification.get_notification_by_event(db=db, event="assign_resource", language=coproductionprocess.language)
+                            if (notification):
+
+
+                                newUserNotification = UserNotification()
+                                newUserNotification.user_id = user.id
+
+                                newUserNotification.notification_id = notification.id
+                                newUserNotification.channel = "in_app"
+                                newUserNotification.state = False
+                                newUserNotification.coproductionprocess_id = str(
+                                    coproductionprocess.id)
+                                newUserNotification.parameters = "{'resourceName':'"+data.asset_name+"','taskName':'"+data.taskName+"','resourceId':'"+str(data.resourceId)+"','processName':'"+html.escape(
+                                    coproductionprocess.name)+"','coproId':'"+str(coproductionprocess.id)+"'}"
+
+                                
+                                db.add(newUserNotification)
+                                db.commit()
+                                db.refresh(newUserNotification)
+
+
+
+
+
                     send_team_email(team, "ask_team_contribution",
                                     {"link": data.link,
                                      "icon_link": data.icon,
@@ -255,6 +286,57 @@ async def create_copro_notification(
                                      "asset_name": data.asset_name,
                                      "subject": data.subject
                                      })
+
+    return "Done"
+
+
+@router.post("/emailAskUserContribution")
+async def create_user_copro_notification(
+    *,
+    db: Session = Depends(deps.get_db),
+    data: EmailUserAssetContribution,
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    print(data)
+    print(data.processId)
+    if (coproductionprocess := await crud.coproductionprocess.get(db=db, id=data.processId)):
+        if crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        
+            if (user := await crud.user.get(db=db, id=data.userTo)):
+
+                #Lets create a notification in-app of the solicitude.
+                notification = await crud.notification.get_notification_by_event(db=db, event="assign_resource", language=coproductionprocess.language)
+                if (notification):
+
+
+                    newUserNotification = UserNotification()
+                    newUserNotification.user_id = user.id
+
+                    newUserNotification.notification_id = notification.id
+                    newUserNotification.channel = "in_app"
+                    newUserNotification.state = False
+                    newUserNotification.coproductionprocess_id = str(
+                        coproductionprocess.id)
+                    newUserNotification.parameters = "{'resourceName':'"+data.asset_name+"','taskName':'"+data.taskName+"','resourceId':'"+str(data.resourceId)+"','processName':'"+html.escape(
+                        coproductionprocess.name)+"','coproId':'"+str(coproductionprocess.id)+"'}"
+
+                    
+                    db.add(newUserNotification)
+                    db.commit()
+                    db.refresh(newUserNotification)
+
+
+
+
+                #Send email to user
+
+                send_email(user.email, "ask_team_contribution",
+                                {"link": data.link,
+                                    "icon_link": data.icon,
+                                    "instructions": data.instructions,
+                                    "asset_name": data.asset_name,
+                                    "subject": data.subject
+                                    })
 
     return "Done"
 

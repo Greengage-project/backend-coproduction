@@ -1,0 +1,11 @@
+** A resource requires attention
+------------------------------------------------------------
+
+The following resource requires your attention:
+{{ asset_name }} ({{ link }})
+
+Here are some instructions:
+
+{{ instructions }}
+
+GO TO THE RESOURCE ({{ link }})

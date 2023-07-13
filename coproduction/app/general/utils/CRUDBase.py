@@ -54,6 +54,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, PatchSchemaType]):
             await self.log_on_get(obj)
             return obj
         return
+    
+    async def get_multi_by_name(self, db: Session, name: str) -> Optional[ModelType]:
+        return db.query(self.model).filter(self.model.name == name).all()
 
     async def get_by_name_translation(self, db: Session, name: str, language: str = settings.DEFAULT_LANGUAGE) -> Optional[ModelType]:
         if obj := db.query(self.model).filter(self.model.name_translations[language] == name).first():
@@ -72,6 +75,20 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, PatchSchemaType]):
                      self.model.name_translations["it"] == name_translations["it"]),
                 and_(self.model.name_translations["lv"] != None,
                      self.model.name_translations["lv"] == name_translations["lv"]),
+            ),
+        ).first()
+    
+    async def get_by_name_translations_value(self, db: Session, name_translations: str) -> Optional[ModelType]:
+        return db.query(self.model).filter(
+            or_(
+                and_(self.model.name_translations["en"] != None,
+                     self.model.name_translations["en"] == name_translations),
+                and_(self.model.name_translations["es"] != None,
+                     self.model.name_translations["es"] == name_translations),
+                and_(self.model.name_translations["it"] != None,
+                     self.model.name_translations["it"] == name_translations),
+                and_(self.model.name_translations["lv"] != None,
+                     self.model.name_translations["lv"] == name_translations),
             ),
         ).first()
 
@@ -182,9 +199,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, PatchSchemaType]):
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
+        #print("update_data", update_data)
         for field, value in update_data.items():
             if hasattr(db_obj, field) and value != getattr(db_obj, field):
-                print("Updating", field)
+                #print("Updating", field)
                 setattr(db_obj, field, value)
         db.add(db_obj)
         db.commit()

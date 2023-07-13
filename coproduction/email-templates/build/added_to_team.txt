@@ -1,0 +1,6 @@
+** {{ team_name }} - New Account
+------------------------------------------------------------
+You have a new account:
+Username:
+Password:
+Go to team panel ({{ link }})

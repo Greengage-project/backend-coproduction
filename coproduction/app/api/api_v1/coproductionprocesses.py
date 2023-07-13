@@ -2,6 +2,7 @@ from locale import strcoll
 import os
 import uuid
 from typing import Any, Dict, List, Optional
+from fastapi_pagination import Page
 
 import aiofiles
 import requests
@@ -12,6 +13,15 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.general import deps
 from app.sockets import socket_manager 
+from app.locales import get_language
+from app.general.emails import send_email
+from fastapi.responses import FileResponse
+from app.models import UserNotification
+from app.models import ParticipationRequest
+import os
+import zipfile
+import json
+import html
 
 router = APIRouter()
 
@@ -30,6 +40,27 @@ async def list_coproductionprocesses(
     if not crud.coproductionprocess.can_list(current_user):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return await crud.coproductionprocess.get_multi_by_user(db, user=current_user, search=search)
+
+@router.get("/public", response_model=Page[Any])
+async def list_coproductionprocesses(
+    db: Session = Depends(deps.get_db),
+    rating: Optional[int] = Query(None),
+    search: Optional[str] = Query(None),
+    tag: Optional[List[str]] = Query(None),
+    skip: int = 0,
+    limit: int = 100,
+    language: str = Depends(get_language)
+
+) -> Any:
+    """
+    Retrieve Public Coproduction Processes.
+    """
+    # print("search", search)
+    # print("rating", rating)
+    # print("tag", tag)
+    # if not crud.coproductionprocess.can_list(current_user):
+    #     raise HTTPException(status_code=403, detail="Not enough permissions")
+    return await crud.coproductionprocess.get_multi_public(db, search=search,  rating=rating,  language=language, tag=tag)
 
 
 @router.post("", response_model=schemas.CoproductionProcessOutFull)
@@ -155,12 +186,19 @@ async def update_coproductionprocess(
     """
     Update an coproductionprocess.
     """
-    #print(coproductionprocess_in)
+    
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=id)
     if not coproductionprocess:
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    if coproductionprocess_in.tags:
+        tmp_tags = []
+        for tag in coproductionprocess_in.tags:
+            t = await crud.tag.get(db=db, id=tag['id'])
+            tmp_tags.append(t)
+        coproductionprocess_in.tags = tmp_tags
+        print(coproductionprocess_in.tags)
     return await crud.coproductionprocess.update(
         db=db, db_obj=coproductionprocess, obj_in=coproductionprocess_in)
 
@@ -180,6 +218,20 @@ async def read_coproductionprocess(
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     if not crud.coproductionprocess.can_read(db=db, user=current_user, object=coproductionprocess):
         raise HTTPException(status_code=403, detail="Not enough permissions")
+    return coproductionprocess
+
+@router.get("/public/{id}", response_model=schemas.CoproductionPublicProcessOutFull)
+async def read_public_coproductionprocess(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: uuid.UUID
+) -> Any:
+    """
+    Get coproductionprocess by ID.
+    """
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     return coproductionprocess
 
 @router.get("/{id}/catalogue", response_model=schemas.CoproductionProcessOutFull)
@@ -250,6 +302,171 @@ async def get_coproductionprocess_tree(
     if not crud.coproductionprocess.can_read(db=db, user=current_user, object=coproductionprocess):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return coproductionprocess.children
+
+
+
+# Order the phases by the order of the tasks
+def topological_sort(tasks):
+    visited = set()
+    stack = []
+    mapping = {task.name: task for task in tasks}
+
+    def visit(task):
+        if task.name not in visited:
+            visited.add(task.name)
+            for prereq_name in task.prerequisites:
+                if prereq_name.name in mapping:
+                    visit(mapping[prereq_name.name])
+            stack.append(task)
+
+    # Visit tasks without prerequisites first
+    for task in tasks:
+        if not task.prerequisites:
+            visit(task)
+
+    # Then visit the rest
+    for task in tasks:
+        if task.name not in visited:
+            visit(task)
+
+    return stack
+
+
+
+
+#Download the coproduction process in a zip file:
+
+@router.get("/{id}/download")
+async def download_zip(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: uuid.UUID,
+    current_user: models.User = Depends(deps.get_current_active_user),
+    token: str = Depends(deps.get_current_active_token)
+):
+
+    #Get the coproductionprocess tree:
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=id)
+    #Phases:
+    #Order the phases using the topological sort:
+    ordered_phases = topological_sort(coproductionprocess.children)
+    phase_dict_list = [phase.to_dict() for phase in ordered_phases]
+
+    cont_phases=0
+    for phase in ordered_phases:
+        ordered_objectives=topological_sort(phase.children)
+        objectives_dict_list = [obj.to_dict() for obj in ordered_objectives]
+        phase_dict_list[cont_phases]["objectives"]=objectives_dict_list
+        
+        cont_objectives=0
+        for objective in ordered_objectives:
+ 
+            ordered_tasks=topological_sort(objective.children)
+            tasks_dict_list = [task.to_dict() for task in ordered_tasks]
+            phase_dict_list[cont_phases]["objectives"][cont_objectives]["tasks"]=tasks_dict_list
+
+
+            cont_objectives=cont_objectives+1
+
+        cont_phases=cont_phases+1
+    #print(phase_dict_list)
+
+   
+    phases_json = json.dumps(phase_dict_list, indent=2)
+    print(phases_json)
+
+
+    # Define the directory name
+    dir_root = 'processes_exported'
+    dir_name = dir_root+'/'+coproductionprocess.name.replace(' ', '_')
+
+    # Create the directory if it does not exist
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    # Now write the JSON string to a file in the new directory
+    with open(os.path.join(dir_name, 'schema.json'), 'w') as f:
+        f.write(phases_json)
+
+
+    # To do a process to download the process information in a file.
+    # Convert the CoproductionProcess object to a dictionary
+    coproduction_dict = coproductionprocess.to_dict()
+
+    # Specify the directory and filename
+    directory = dir_name
+    filename = "coproduction.json"
+
+    # Create the full file path
+    file_path = os.path.join(directory, filename)
+
+    # Convert the dictionary to JSON
+    json_data = json.dumps(coproduction_dict)
+
+    # Write the JSON data to the specified file
+    with open(file_path, "w") as json_file:
+        json_file.write(json_data)
+
+
+    # Go through the tasks and download all the files:
+    print("-----------------------------------------------------------------")
+    for phase in ordered_phases:
+        ordered_objectives=topological_sort(phase.children)
+        for objective in ordered_objectives:
+            ordered_tasks=topological_sort(objective.children)  
+            for task in ordered_tasks:
+                #Get the assets of this task:
+                print("The task is: "+str(task.id))
+
+                assets=await crud.asset.get_multi_withIntData(db, task=task, token=token)
+      
+                for asset in assets:
+                    print("The asset id: "+str(asset.id))
+                    print("The asset type: "+str(asset.type))
+                    if asset.type=="internalasset":
+                        print("The info del internal asset: "+json.dumps(asset.internalData))
+                        
+                           
+
+                    print(asset)
+                    break
+                break
+            break
+        break
+    print("-----------------------------------------------------------------")
+
+
+
+
+    # I need to create a json file with the coproduction process
+    # specify your directory
+    directory = dir_name
+
+    # specify the directory where the zip file will be stored
+    zip_directory = 'zipfiles'
+
+    # Check if directory exists. If not, create it.
+    if not os.path.exists(zip_directory):
+        os.makedirs(zip_directory)
+
+    # specify the name of your zip file
+    file_name = coproductionprocess.name.replace(' ', '_')+'.zip'
+
+    # create the full zip file path
+    zip_path = os.path.join(zip_directory, file_name)
+
+    zipf = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+
+    # compress all files in the directory
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            zipf.write(os.path.join(root, file))
+
+    zipf.close()
+
+
+    print("The zip file is: "+zip_path)
+    return FileResponse(zip_path, media_type='application/zip', filename=file_name)
 
 @router.get("/{id}/tree/catalogue", response_model=Optional[List[schemas.PhaseOutFull]])
 async def get_coproductionprocess_tree_catalogue(
@@ -352,6 +569,64 @@ async def send_message(
     await socket_manager.send_to_id(id=id, data={"data": message})
 
 
+@router.post("/emailApplyToBeContributor")
+async def sendEmailApplyToBeContributor(
+    *,
+    db: Session = Depends(deps.get_db),
+    data: dict,
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    if (coproductionprocess := await crud.coproductionprocess.get(db=db, id=data["processId"])):
+        print("The coproductionprocess is: "+str(coproductionprocess.id))
+        
+        #Create an request application to be contributor
+        newParticipationRequest = ParticipationRequest() 
+        newParticipationRequest.candidate_id = current_user.id
+        newParticipationRequest.coproductionprocess_id = coproductionprocess.id
+        newParticipationRequest.razon=data["razon"]
+        db.add(newParticipationRequest)
+        db.commit()
+        db.refresh(newParticipationRequest)
+
+        
+        #Lets create a notification in-app of the solicitude.
+        notification = await crud.notification.get_notification_by_event(db=db, event="apply_submited", language=coproductionprocess.language)
+        if (notification):
+            print("The notification is: "+str(notification.id))
+            #I need to create a notification for every admin of the process:
+            for admin_id in coproductionprocess.administrators_ids:
+                newUserNotification = UserNotification()
+                newUserNotification.user_id = admin_id
+
+                newUserNotification.notification_id = notification.id
+                newUserNotification.channel = "in_app"
+                newUserNotification.state = False
+                newUserNotification.coproductionprocess_id = str(
+                    coproductionprocess.id)
+                newUserNotification.parameters = "{'razon':'"+data["razon"]+"','userName':'"+current_user.full_name+"','userEmail':'"+current_user.email+"','processName':'"+html.escape(
+                    coproductionprocess.name)+"','copro_id':'"+str(coproductionprocess.id)+"'}"
+            
+                print("Create a notification for the user: "+str(admin_id)+" with the notification: "+str(notification.id)+" and the coproductionprocess: "+str(coproductionprocess.id)+" and the parameters: "+str(newUserNotification.parameters))
+                db.add(newUserNotification)
+                db.commit()
+                db.refresh(newUserNotification)
+
+
+        #if crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        print(data["adminEmails"])
+        for admin_email in data["adminEmails"]:
+            print("Send email to: "+admin_email)
+            send_email(admin_email, "apply_to_be_contributor",
+                            {"coprod_id": data["processId"],
+                                "user_name": current_user.full_name,
+                                "user_email": current_user.email,
+                                "coproductionprocess_name": data["coproductionName"],
+                                "razon": data["razon"],
+                            })
+
+    return "Done"
+
+
 @router.websocket("/{id}/ws")
 async def websocket_endpoint(
     *,
@@ -409,3 +684,21 @@ async def copy_coproductionprocess(
     #print("POSTUPDATE")
     # If new_coprod is returned it raises an error regarding recursion with Python
     return new_coprod.id
+
+@router.post("/{id}/addTag")
+async def add_tag(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: uuid.UUID,
+    current_user: models.User = Depends(deps.get_current_active_user),
+    tag: schemas.Tag,
+) -> Any:
+    """
+    Add tag to coproductionprocess.
+    """
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    return await crud.coproductionprocess.add_tag(db=db, db_obj=coproductionprocess, tag=tag)

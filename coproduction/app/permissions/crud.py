@@ -225,6 +225,27 @@ class CRUDPermission(CRUDBase[Permission, schemas.PermissionCreate, schemas.Perm
             ),
             Permission.team_id.in_(user.teams_ids)
         ).all()
+    
+    async def get_for_user_and_treeitem_async(
+        self, db: Session, user: models.User, treeitem: models.TreeItem
+    ):
+        #print('Llega a preguntar por los assets:')
+        #print(db)
+        return db.query(
+            Permission
+        ).filter(
+            or_(
+                and_(
+                    Permission.treeitem_id.in_(treeitem.path_ids),
+                    Permission.coproductionprocess_id == treeitem.coproductionprocess.id
+                ),
+                and_(
+                    Permission.treeitem_id == None,
+                    Permission.coproductionprocess_id == treeitem.coproductionprocess.id
+                ),
+            ),
+            Permission.team_id.in_(user.teams_ids)
+        ).all()
 
     def get_user_roles(self, db: Session, treeitem: models.TreeItem, user: models.User):
         roles = []

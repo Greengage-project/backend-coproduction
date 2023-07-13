@@ -9,8 +9,8 @@ from app.general.utils.CRUDBase import CRUDBase
 
 
 class CRUDTag(CRUDBase[Tag, TagCreate, TagPatch]):
-    async def get_by_name(self, db: Session, name: str, locale: str) -> Optional[Tag]:
-        return db.query(Tag).filter(Tag.name_translations[locale] == name).first()
+    async def get_by_name(self, db: Session, name: str) -> Optional[Tag]:
+        return db.query(Tag).filter(Tag.name == name).first()
 
     # CRUD Permissions
     def can_create(self, user):

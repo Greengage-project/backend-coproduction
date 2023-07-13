@@ -1,0 +1,10 @@
+{
+    "event": "apply_submited",
+    "title": "A user has applied to participate in a process.",
+    "subtitle": "The user '{userName}' ({userEmail}) apply to be part of the coproduction process '{processName}'.",
+    "text": "The user {userName} ({userEmail}) apply to be part of the coproduction '<a href='/dashboard/coproductionprocesses/{copro_id}/overview/'>{processName}</a>'.",
+    "html_template": null,
+    "url_link": "/dashboard/coproductionprocesses/{copro_id}/team?tab=Requests",
+    "icon":"group",
+    "language":"en" 
+  }

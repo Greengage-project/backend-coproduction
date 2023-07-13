@@ -99,3 +99,18 @@ class TreeItem(BaseModel):
         db = Session.object_session(self)
         if user := get_current_user_from_context(db=db):
             return exportCrud.get_user_roles(db=db, user=user, treeitem=self)
+    
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'type': self.type,
+            'name': self.name,
+            'description': self.description,
+            'status': self.status.value,  # Assuming `Status` is an Enum
+            'creator_id': self.creator_id,
+            'disabler_id': self.disabler_id,
+            'disabled_on': self.disabled_on.isoformat() if self.disabled_on else None,
+            'from_item': str(self.from_item) if self.from_item else None,
+            'from_schema': str(self.from_schema) if self.from_schema else None,
+            'prerequisites_ids': [str(prereq.id) for prereq in self.prerequisites]
+        }

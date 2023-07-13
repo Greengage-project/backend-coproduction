@@ -23,7 +23,11 @@ class User(BaseModel):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+  
+
     notifications = association_proxy("user_notification_associations", "notification")
+
 
     applied_teams_ids = association_proxy("applied_teams", "id")
 

@@ -1,0 +1,10 @@
+{
+    "event": "assign_resource",
+    "title": "You have been assigned to work on a resource.",
+    "subtitle": "You have been assigned to work in the resource: '{resourceName}' of the task '{taskName}' in the coproduction process '{processName}'.",
+    "text": "You have been assigned to work in the resource: '{resourceName}' of the task '{taskName}' in the coproduction process '{processName}'.",
+    "html_template": null,
+    "url_link": "/dashboard/coproductionprocesses/{coproId}/{resourceId}/view",
+    "icon":"group",
+    "language":"en" 
+  }

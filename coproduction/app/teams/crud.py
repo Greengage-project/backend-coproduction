@@ -37,6 +37,8 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamPatch]):
             )
             .all()
         )
+    
+    
 
     async def add_user(self, db: Session, team: Team, user: models.User) -> Team:
         from app.worker import sync_asset_treeitems
@@ -143,7 +145,7 @@ class CRUDTeam(CRUDBase[Team, TeamCreate, TeamPatch]):
         self, db: Session, obj_in: TeamCreate, creator: models.User
     ) -> Team:
         obj_in_data = jsonable_encoder(obj_in)
-        user_ids = obj_in.user_ids
+        user_ids = obj_in_data['user_ids']
         del obj_in_data["user_ids"]
 
         db_obj = Team(**obj_in_data)

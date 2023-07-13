@@ -23,12 +23,28 @@ async def list_usernotifications(
     return await crud.usernotification.get_multi(db=db, user=current_user)
 
 @router.get("/{user_id}/listUserNotifications", response_model=Optional[List[schemas.UserNotificationOutFull]])
-async def list_usernotifications(
+async def list_user_notifications(
     db: Session = Depends(deps.get_db),
     current_user: Optional[models.User] = Depends(deps.get_current_active_user),
     user_id: str = '',
 ) -> Any:
     return await crud.usernotification.get_user_notifications(db=db,user_id=user_id)
+
+@router.get("/{copro_id}/listUserAplicationsbyCoproId", response_model=Optional[List[schemas.UserNotificationOutFull]])
+async def list_useraplications(
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    copro_id: str = '',
+) -> Any:
+    return await crud.usernotification.get_list_user_aplications_by_copro(db=db,copro_id=copro_id)
+
+@router.get("/{copro_id}/listUserAplicationsHistorybyCoproId", response_model=Optional[List[schemas.UserNotificationOutFull]])
+async def list_useraplicationshistory(
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    copro_id: str = '',
+) -> Any:
+    return await crud.usernotification.get_list_user_aplicationshistory_by_copro(db=db,copro_id=copro_id)
 
 @router.get("/{user_id}/listUnseenUserNotifications", response_model=Optional[List[schemas.UserNotificationOutFull]])
 async def list_unseenusernotifications(
@@ -72,6 +88,24 @@ async def update_usernotification(
     db: Session = Depends(deps.get_db),
     id: uuid.UUID,
     usernotification_in: schemas.UserNotificationState,
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Update an usernotification.
+    """
+    usernotification = await crud.usernotification.get(db=db, id=id)
+
+    if not usernotification:
+        raise HTTPException(status_code=404, detail="UserNotification not found")
+    return await crud.usernotification.update(db=db, db_obj=usernotification, obj_in=usernotification_in)
+
+#Just the Update of the state is cover in the API.
+@router.put("/{id}/archive", response_model=Optional[schemas.UserNotificationOutFull])
+async def archive_usernotification(
+    *,
+    db: Session = Depends(deps.get_db),
+    id: uuid.UUID,
+    usernotification_in: schemas.UserNotificationArchive,
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """

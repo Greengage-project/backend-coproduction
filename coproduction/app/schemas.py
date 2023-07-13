@@ -11,9 +11,14 @@ from app.teams.schemas import *
 from app.users.schemas import *
 from app.notifications.schemas import *
 from app.usernotifications.schemas import *
+from app.participationrequests.schemas import *
 from app.coproductionprocessnotifications.schemas import *
 from app.stories.schemas import *
 from app.tags.schemas import *
+from app.ratings.schemas import *
+from app.keywords.schemas import *
+from app.claims.schemas import *
+from app.assignments.schemas import *
 
 # out
 
@@ -57,6 +62,21 @@ class UserNotificationOutFull(UserNotificationOut):
     notification: NotificationOut
     pass
 
+class ParticipationRequestOutFull(ParticipationRequestOut):
+    user:UserOut
+    pass
+
+class ClaimOutFull(ClaimOut):
+    user:UserOut
+    asset:AssetOut
+    pass
+
+class AssignmentOutFull(AssignmentOut):
+    user:UserOut
+    asset:AssetOut
+    claims:List[ClaimOutFull]
+    pass
+
 class CoproductionProcessNotificationOutFull(CoproductionProcessNotificationOut):
     notification: NotificationOut
     pass
@@ -82,9 +102,17 @@ class CoproductionProcessOutFull(CoproductionProcessOut):
         # set instead of list to avoid repeated teams
         return set(v)
 
+class CoproductionPublicProcessOutFull(CoproductionProcessOut):
+    administrators: List[UserOut]
 
 class TagOutFull(TagOut):
     pass
+
+
+class CoproductionProcessAddToObservers(BaseModel):
+    users_ids: List[str]
+    coproduction_process_id: uuid.UUID
+    asset_id: uuid.UUID
 
 # in
 

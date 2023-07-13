@@ -1,11 +1,12 @@
 import uuid
 import os.path
+
 import requests
 from typing import List, Optional
 
 from slugify import slugify
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
+from sqlalchemy import and_, func, or_
 from app import crud, models
 from app.general.utils.CRUDBase import CRUDBase
 from app.models import CoproductionProcess, Permission, User, Permission, TreeItem, Asset
@@ -16,6 +17,13 @@ from app.treeitems.crud import exportCrud as treeitemsCrud
 from app.sockets import socket_manager
 from app.utils import check_prerequistes
 from app.config import settings
+from fastapi import HTTPException
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy.orm import Query, subqueryload
+from sqlalchemy import func
+
+
+
 
 
 class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessCreate, CoproductionProcessPatch]):
@@ -50,6 +58,56 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             )
 
         return query.order_by(CoproductionProcess.created_at.asc()).all()
+
+    async def get_multi_public(self, db: Session, exclude: list = [], search: str = "", rating: int = 0, language: str = "en", tag: list = []
+                               ) -> Optional[List[CoproductionProcess]]:
+        
+        print("tag", tag)
+
+        queries = []
+
+        
+        if rating:
+                queries.append(CoproductionProcess.rating >= rating)
+
+        if search!="":
+            if search:
+                search = search.lower()
+                queries.append(or_(
+                        # func.lower(Story.keywords_translations[language]).contains(
+                        #     search),
+                        func.lower(CoproductionProcess.name).contains(func.lower(
+                            search)),
+                        func.lower(
+                            CoproductionProcess.description).contains(func.lower(search))
+                    ))
+            
+        
+        if tag and any(tag):
+            subq = (
+                db.query(CoproductionProcess.id)
+                .join(CoproductionProcess.tags)
+                .filter(models.Tag.name.in_(tag))
+                .group_by(CoproductionProcess.id)
+                .having(func.count(func.distinct(models.Tag.name)) == len(tag))
+                .subquery()
+            )
+            queries.append(CoproductionProcess.id.in_(subq))
+            query: Query = db.query(CoproductionProcess).join(CoproductionProcess.tags)
+        else:
+            query: Query = db.query(CoproductionProcess)
+
+        queries.append(CoproductionProcess.is_public == True)
+
+        
+        query = query.options(subqueryload(CoproductionProcess.tags))
+
+        query = query.filter(*queries, CoproductionProcess.id.not_in(exclude))
+
+        return paginate(query)
+
+       
+
 
     async def get_assets(self, db: Session, coproductionprocess: CoproductionProcess, user: models.User,token:str):
 
@@ -308,6 +366,7 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             organization_desc=coproductionprocess.organization,
             challenges=coproductionprocess.challenges,
             status=coproductionprocess.status,
+            cloned_from_id=coproductionprocess.id,
         )
 
         db_obj = await self.create(db=db, obj_in=new_coproductionprocess, creator=user, set_creator_admin=True)
@@ -399,6 +458,22 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
                 await crud.permission.create(db=db, obj_in=new_permission, creator=user, notifyAfterAdded=False)
 
+        await log({"action": "CLONE","model":"COPRODUCTIONPROCESS","object_id":db_obj.id,"cloned_from_id":db_obj.cloned_from_id,"from_view":from_view})
+
+        return db_obj
+    
+    async def add_tag(self, db: Session, db_obj: CoproductionProcess, tag_id: uuid.UUID):
+        if (tag := await crud.tag.get(db=db, id=tag_id)):
+            if tag not in db_obj.tags:
+                db_obj.tags.append(tag)
+                db.add(db_obj)
+                db.commit()
+                db.refresh(db_obj)
+            else:
+                raise HTTPException(status_code=400, detail="Tag already exists in this coproduction process")
+        
+        await self.log_on_update(db_obj)
+        
         return db_obj
 
     # Override log methods

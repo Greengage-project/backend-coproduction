@@ -1,0 +1,10 @@
+{
+  "event": "apply_submited",
+  "title": "Lietotājs ir pieteicies dalībai procesā.",
+  "subtitle": "Lietotājs '{userName}' ({userEmail}) piesakās piedalīties kopražošanas procesā '{processName}'.",
+  "text": "Lietotājs {userName} ({userEmail}) piesakās piedalīties kopražošanas procesā '<a href='/dashboard/coproductionprocesses/{copro_id}/overview/'>{processName}</a>'.",
+  "html_template": null,
+  "url_link": "/dashboard/coproductionprocesses/{copro_id}/team?tab=Requests",
+  "icon":"group",
+  "language":"lv" 
+}

@@ -11,11 +11,15 @@ class UserNotificationBase(BaseModel):
     notification_id: uuid.UUID
     channel: ChannelTypes
     state: bool
+    is_archived: Optional[bool]
     coproductionprocess_id: Optional[uuid.UUID]
     parameters: Optional[str]
 
 class UserNotificationState(BaseModel):
     state: bool
+
+class UserNotificationArchive(BaseModel):
+    is_archived: bool
 
 
 class UserNotification(UserNotificationBase):
