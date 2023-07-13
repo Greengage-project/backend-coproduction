@@ -35,7 +35,7 @@ class Assignment(BaseModel):
     state = Column(Boolean, nullable=True, default=False)
 
      # add the relationship to claims
-    claims = relationship('Claim', backref='assignment')
+    claims = relationship('Claim', backref='assignment',order_by='desc(Claim.created_at)')
 
     def __repr__(self) -> str:
-        return f"<Assignment {self.id} {self.user.name} {self.title} {self.state}>"
+        return f"<Assignment {self.id} {self.user.full_name} {self.title} {self.state}>"

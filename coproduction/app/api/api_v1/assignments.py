@@ -63,6 +63,34 @@ async def list_full_assignments_by_asset(
 
 
 
+@router.get("/{assign_id}/view", response_model=Optional[schemas.AssignmentOutFull])
+async def list_assignments_bycopro_byassign(
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    assign_id: str = '',
+) -> Any:
+    #Check if the user is assigned to the assignment
+    assignment=await crud.assignment.get(db=db,id=uuid.UUID(assign_id))
+
+    print(assignment)
+
+    if not assignment:
+        raise HTTPException(
+            status_code=400,
+            detail="The assignment does not exist",
+        )
+    
+    print(assignment.user_id)
+    print(current_user.id)
+
+    if(current_user.id != assignment.user_id):
+        raise HTTPException(
+            status_code=400,
+            detail="The user is not assigned to the assignment",
+        )
+    return assignment
+
+
 @router.get("/{copro_id}/listPendingAssignmentsbyCoproId", response_model=Optional[List[schemas.AssignmentOutFull]])
 async def list_assignments_bycopro(
     db: Session = Depends(deps.get_db),
