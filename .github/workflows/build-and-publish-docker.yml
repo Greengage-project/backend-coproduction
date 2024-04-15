@@ -76,6 +76,7 @@ jobs:
           tags: |
             projectgreengage/backend-coproduction:${{ github.ref_name }}
             projectgreengage/backend-coproduction:${{ github.ref_name }}.${{ steps.date.outputs.date }}
+            projectgreengage/backend-coproduction:${{ github.sha }}
           cache-from: type=registry,ref=projectgreengage/backend-coproduction:buildcache
           cache-to: type=registry,ref=projectgreengage/backend-coproduction:buildcache,mode=max
 
