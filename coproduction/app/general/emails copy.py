@@ -86,7 +86,13 @@ def send_email(
     )
 
     # SMTP settings
-    smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
+    smtp_options = {
+        "host": settings.SMTP_HOST,
+        "port": settings.SMTP_PORT,
+        "tls": settings.SMTP_TLS,
+        "user": settings.SMTP_USER,
+        "password": settings.SMTP_PASSWORD
+    }
     if settings.SMTP_TLS:
         smtp_options["tls"] = True
     if settings.SMTP_USER:

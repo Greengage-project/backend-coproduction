@@ -19,8 +19,6 @@ semaphore = threading.Semaphore(4)
 
 def thread_send_email(message, email_to, environment, smtp_options):
     with semaphore:
-        message.dkim(key=os.environ['DKIM_KEY'],
-                     domain='greengage-project.eu', selector='google')
         response = message.send(
             to=email_to, render=environment, smtp=smtp_options)
         logging.info(f"send email result: {response}")
