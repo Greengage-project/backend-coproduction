@@ -19,10 +19,21 @@ semaphore = threading.Semaphore(4)
 
 def thread_send_email(message, email_to, environment, smtp_options):
     with semaphore:
-        response = message.send(
-            to=email_to, render=environment, smtp=smtp_options)
-        logging.info(f"send email result: {response}")
-
+        try:
+            logging.info(f"--------------------------------------")
+            logging.info(smtp_options)
+            response = message.send(
+                to=email_to, render=environment, smtp=smtp_options)
+            if response.status_code not in [250, '250']:
+                logging.error(
+                    f"Failed to send email: {response.status_code} {response.status_text}")
+            else:
+                logging.info(
+                    f"Email successfully sent: {response.status_code} {response.status_text}")
+        except Exception as e:
+            logging.exception("An error occurred while sending email.")
+        finally:
+            logging.info(f"send email result: {response}")
 # Create a new class that inherits from the emails.Message class
 
 
