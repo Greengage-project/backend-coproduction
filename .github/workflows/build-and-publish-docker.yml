@@ -79,13 +79,14 @@ jobs:
           cache-from: type=registry,ref=projectgreengage/backend-coproduction:buildcache
           cache-to: type=registry,ref=projectgreengage/backend-coproduction:buildcache,mode=max
 
-      - name: Trigger Dev Deployment
-        uses: octokit/request-action@v2.x
-        id: trigger_dev_deployment
-        with:
-          route: POST /repos/{owner}/{repo}/dispatches
-          owner: interlink-project
-          repo: interlink-project
-          event_type: update-dev-environment
-        env:
-          GITHUB_TOKEN: ${{ secrets.GREENGAGE_PROJECT_GITHUB_TOKEN }}
+      # Disabled for now . Problems in gitactions
+      # - name: Trigger Dev Deployment
+      #   uses: octokit/request-action@v2.x
+      #   id: trigger_dev_deployment
+      #   with:
+      #     route: POST /repos/{owner}/{repo}/dispatches
+      #     owner: interlink-project
+      #     repo: interlink-project
+      #     event_type: update-dev-environment
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GREENGAGE_PROJECT_GITHUB_TOKEN }}
