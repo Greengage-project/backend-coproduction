@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     last_login: datetime = datetime.now()
     email: Optional[str]
     additionalEmails: Optional[List[str]]
+    agreeTermsOfUse: Optional[bool]
 
 class UserCreate(UserBase):
     id: str

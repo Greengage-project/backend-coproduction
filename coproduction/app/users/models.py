@@ -18,6 +18,8 @@ class User(BaseModel):
     teams_ids = association_proxy('teams', 'id')
     administered_teams_ids = association_proxy('administered_teams', 'id')
 
+    agreeTermsOfUse = Column(Boolean, default=False)
+
     user_notification_associations = relationship(
         "UserNotification",
         back_populates="user",

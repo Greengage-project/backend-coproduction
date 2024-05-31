@@ -58,3 +58,40 @@ async def websocket_endpoint(
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         socket_manager.disconnect(websocket, id)
+
+
+@router.put("/agree-terms", response_model=schemas.UserOutFull)
+async def agreeTerms(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Update a user's record to indicate agreement to terms.
+    """
+    user = await crud.user.get(db=db, id=current_user.id)
+
+    user_patch = {"agreeTermsOfUse": True}
+    
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="User not found")
+    return await crud.user.update(db=db, db_obj=user, obj_in=user_patch)
+
+
+@router.put("/refuse-terms", response_model=schemas.UserOutFull)
+async def agreeTerms(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Update a user's record to indicate agreement to terms.
+    """
+    user = await crud.user.get(db=db, id=current_user.id)
+
+    user_patch = {"agreeTermsOfUse": True}
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="User not found")
+    return await crud.user.update(db=db, db_obj=user, obj_in=user_patch)
