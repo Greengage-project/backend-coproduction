@@ -10,6 +10,7 @@ from app.tasks.schemas import *
 from app.teams.schemas import *
 from app.users.schemas import *
 from app.notifications.schemas import *
+from app.useractions.schemas import *
 from app.usernotifications.schemas import *
 from app.participationrequests.schemas import *
 from app.coproductionprocessnotifications.schemas import *
@@ -31,9 +32,8 @@ class AssetOutFull(AssetOut):
     pass
 
 
-
 class TeamOutFull(TeamOut):
-    # organization: OrganizationOut
+    #  organization: OrganizationOut
     administrators: List[UserOut]
 
 
@@ -58,31 +58,38 @@ class TaskOutFull(TaskOut, TreeItemOutFull):
 class NotificationOutFull(NotificationOut):
     pass
 
+
 class UserNotificationOutFull(UserNotificationOut):
     notification: NotificationOut
     pass
 
+
 class ParticipationRequestOutFull(ParticipationRequestOut):
-    user:UserOut
+    user: UserOut
     pass
+
 
 class ClaimOutFull(ClaimOut):
-    user:UserOut
-    asset:AssetOut
+    user: UserOut
+    asset: AssetOut
     pass
 
+
 class AssignmentOutFull(AssignmentOut):
-    user:UserOut
-    asset:AssetOut
-    claims:List[ClaimOutFull]
+    user: UserOut
+    asset: AssetOut
+    claims: List[ClaimOutFull]
     pass
+
 
 class CoproductionProcessNotificationOutFull(CoproductionProcessNotificationOut):
     notification: NotificationOut
     pass
 
+
 class StoryOutFull(StoryOut):
     pass
+
 
 class ObjectiveOutFull(ObjectiveOut, TreeItemOutFull):
     children: List[TaskOutFull]
@@ -102,8 +109,10 @@ class CoproductionProcessOutFull(CoproductionProcessOut):
         # set instead of list to avoid repeated teams
         return set(v)
 
+
 class CoproductionPublicProcessOutFull(CoproductionProcessOut):
     administrators: List[UserOut]
+
 
 class TagOutFull(TagOut):
     pass

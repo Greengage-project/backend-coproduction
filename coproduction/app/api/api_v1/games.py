@@ -38,15 +38,18 @@ async def get_game(
     """
     Retrieve game by process_id.
     """
-    response = requests.get(f"http://{serviceName}{PATH}/processId/{process_id}")
-    
+    response = requests.get(
+        f"http://{serviceName}{PATH}/processId/{process_id}")
+
     return response.json()
+
 
 @router.post("/{process_id}")
 async def set_game(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     taskList: dict
 ) -> Any:
@@ -56,7 +59,8 @@ async def set_game(
 
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     if not taskList:
@@ -92,7 +96,8 @@ async def set_game(
 async def update_game(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     task: dict
 ) -> Any:
@@ -102,7 +107,8 @@ async def update_game(
 
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
@@ -149,7 +155,8 @@ async def update_game(
 async def delete_game(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
 ) -> Any:
     """
@@ -157,7 +164,8 @@ async def delete_game(
     """
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
@@ -185,7 +193,8 @@ async def get_leaderboard(
 
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
 
@@ -214,7 +223,8 @@ async def get_task(
     """
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
 
@@ -230,7 +240,8 @@ async def get_task(
 async def update_task(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     task_id: uuid.UUID,
     data: dict
@@ -243,7 +254,8 @@ async def update_task(
     """
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
@@ -266,7 +278,8 @@ async def update_task(
 async def add_claim(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     task_id: uuid.UUID,
     data: dict
@@ -283,7 +296,8 @@ async def add_claim(
     # print(json_object)
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
@@ -305,7 +319,8 @@ async def add_claim(
 async def complete_task(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     task_id: uuid.UUID,
 ) -> Any:
@@ -314,7 +329,8 @@ async def complete_task(
     """
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):
@@ -333,7 +349,8 @@ async def complete_task(
 async def revert_task(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    current_user: Optional[models.User] = Depends(
+        deps.get_current_active_user),
     process_id: uuid.UUID,
     task_id: uuid.UUID,
 ) -> Any:
@@ -342,7 +359,8 @@ async def revert_task(
     """
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
-        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+        raise HTTPException(
+            status_code=404, detail="CoproductionProcess not found")
     if not coproductionprocess.game_id:
         raise HTTPException(status_code=404, detail="Game not found")
     if not crud.coproductionprocess.can_update(user=current_user, object=coproductionprocess):

@@ -9,6 +9,7 @@ from app.treeitems.models import *
 from app.organizations.models import *
 from app.permissions.models import *
 from app.notifications.models import *
+from app.useractions.models import *
 from app.usernotifications.models import *
 from app.participationrequests.models import *
 from app.coproductionprocessnotifications.models import *

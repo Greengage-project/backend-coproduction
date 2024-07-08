@@ -5,10 +5,11 @@ from sqlalchemy import ARRAY, Column, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 
+
 class User(BaseModel):
     id = Column(String, primary_key=True)
     is_superuser = Column(Boolean, default=False)
-    
+
     picture = Column(String)
     full_name = Column(String)
     last_login = Column(DateTime)
@@ -26,10 +27,8 @@ class User(BaseModel):
         cascade="all, delete-orphan",
     )
 
-  
-
-    notifications = association_proxy("user_notification_associations", "notification")
-
+    notifications = association_proxy(
+        "user_notification_associations", "notification")
 
     applied_teams_ids = association_proxy("applied_teams", "id")
 
