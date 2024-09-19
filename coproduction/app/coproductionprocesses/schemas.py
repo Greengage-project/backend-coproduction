@@ -11,6 +11,7 @@ from .models import Status
 
 Languages = choice(settings.ALLOWED_LANGUAGES_LIST)
 
+
 class CoproductionProcessBase(BaseModel):
     schema_used: Optional[uuid.UUID]
     name: str
@@ -24,15 +25,16 @@ class CoproductionProcessBase(BaseModel):
     status: Optional[Status]
     incentive_and_rewards_state: Optional[bool]
 
-    #Optional field defined just by the user:
-    hasAddAnOrganization : Optional[bool]
-    skipResourcesStep : Optional[bool]
-    hideguidechecklist : Optional[bool]
+    # Optional field defined just by the user:
+    hasAddAnOrganization: Optional[bool]
+    skipResourcesStep: Optional[bool]
+    hideguidechecklist: Optional[bool]
     intergovernmental_model: Optional[str]
     cloned_from_id: Optional[uuid.UUID]
     is_part_of_publication: Optional[bool]
     is_public: Optional[bool]
     game_id: Optional[str]
+    game_gamification_engine: Optional[str]
     rating: Optional[float]
     ratings_count: Optional[int]
 
@@ -42,6 +44,7 @@ class CoproductionProcessCreate(CoproductionProcessBase):
 
     class Config:
         arbitrary_types_allowed = True
+
 
 class CoproductionProcessPatch(CoproductionProcessCreate):
     name:  Optional[str]
@@ -53,15 +56,15 @@ class CoproductionProcessPatch(CoproductionProcessCreate):
     is_public: Optional[bool]
     language: Optional[Languages]
     game_id: Optional[str]
+    game_gamification_engine: Optional[str]
     tags: Optional[List]
     rating: Optional[float]
     ratings_count: Optional[int]
 
-
-    #Optional field defined just by the user:
-    hasAddAnOrganization : Optional[bool]
-    skipResourcesStep : Optional[bool]
-    hideguidechecklist : Optional[bool]
+    # Optional field defined just by the user:
+    hasAddAnOrganization: Optional[bool]
+    skipResourcesStep: Optional[bool]
+    hideguidechecklist: Optional[bool]
 
 
 class CoproductionProcess(CoproductionProcessBase):
@@ -77,18 +80,18 @@ class CoproductionProcess(CoproductionProcessBase):
 
 
 class CoproductionProcessOut(CoproductionProcess):
-    logotype_link: Optional[str] 
+    logotype_link: Optional[str]
     intergovernmental_model: Optional[str]
     language: Any
     administrators_ids: List[str]
     current_user_participation: list
-    
+
     tags: List
 
     @validator('administrators_ids', pre=True)
     def administrators_ids_to_list(cls, v):
         return list(v)
-    
+
     # @validator('tags_ids', pre=True)
     # def tags_ids_to_list(cls, v):
     #     return list(v)

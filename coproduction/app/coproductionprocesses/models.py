@@ -93,6 +93,9 @@ class CoproductionProcess(BaseModel):
     
     # Gamification
     game_id = Column(String, nullable=True)
+    # new gamification
+    game_gamification_engine = Column(String, nullable=True)
+
     
     # Tags
     tags = relationship(
@@ -179,6 +182,8 @@ class CoproductionProcess(BaseModel):
             'rating': str(self.rating),
             'ratings_count': self.ratings_count,
             'administrators': [admin.email for admin in self.administrators],
+            'game_id': self.game_id,
+            'game_gamification_engine': self.game_gamification_engine,
             'tags': [str(tag.name) for tag in self.tags],
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'start_date': self.start_date.isoformat() if self.start_date else None,

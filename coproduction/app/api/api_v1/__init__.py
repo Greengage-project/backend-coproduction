@@ -17,6 +17,7 @@ from app.api.api_v1 import (
     stories,
     utils,
     games,
+    old_games,
     recomenders,
     tags,
     ratings,
@@ -48,25 +49,28 @@ api_router.include_router(organizations.router,
 api_router.include_router(notifications.router,
                           prefix="/notifications", tags=["notification"])
 api_router.include_router(usernotifications.router,
-                          prefix="/usernotifications", tags=["usernotification"])       
+                          prefix="/usernotifications", tags=["usernotification"])
 api_router.include_router(participationrequests.router,
-                          prefix="/participationrequests", tags=["participationrequest"])  
+                          prefix="/participationrequests", tags=["participationrequest"])
 api_router.include_router(claims.router,
-                          prefix="/claims", tags=["claim"])      
+                          prefix="/claims", tags=["claim"])
 api_router.include_router(assignments.router,
-                          prefix="/assignments", tags=["assignment"])  
+                          prefix="/assignments", tags=["assignment"])
 api_router.include_router(coproductionprocessnotifications.router,
-                          prefix="/coproductionprocessnotifications", tags=["coproductionprocessnotification"])   
+                          prefix="/coproductionprocessnotifications", tags=["coproductionprocessnotification"])
 api_router.include_router(stories.router,
-                          prefix="/stories", tags=["Stories"])    
+                          prefix="/stories", tags=["Stories"])
 api_router.include_router(recomenders.router,
-                            prefix="/recomenders", tags=["Recomenders"])   
+                          prefix="/recomenders", tags=["Recomenders"])
 api_router.include_router(ratings.router,
-                            prefix="/ratings", tags=["Ratings"])             
+                          prefix="/ratings", tags=["Ratings"])
 api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
-api_router.include_router(games.router, prefix="/games", tags=["games"])
+api_router.include_router(
+    old_games.router, prefix="/old_games", tags=["Old Games"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
-api_router.include_router(keywords.router, prefix="/keywords", tags=["keywords"])
+api_router.include_router(
+    keywords.router, prefix="/keywords", tags=["keywords"])
+
 
 @api_router.get("/")
 async def main():
