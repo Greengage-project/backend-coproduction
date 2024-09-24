@@ -23,6 +23,7 @@ from app.tables import coproductionprocess_administrators_association_table, cop
 from sqlalchemy.orm import Session
 from app.utils import Status
 
+
 class CoproductionProcess(BaseModel):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     schema_used = Column(UUID(as_uuid=True))
@@ -37,28 +38,27 @@ class CoproductionProcess(BaseModel):
     challenges = Column(Text, nullable=True)
     requirements = Column(Text, nullable=True)
 
-    #Active Optional Modules
-    incentive_and_rewards_state =Column(Boolean,nullable=True)
+    # Active Optional Modules
+    incentive_and_rewards_state = Column(Boolean, nullable=True)
 
-    #Optional field defined just by the user:
-    #-------------
-    hasAddAnOrganization =Column(Boolean,nullable=True)
-    skipResourcesStep =Column(Boolean,nullable=True)
-    hideguidechecklist =Column(Boolean,nullable=True)
-    #-------------
+    # Optional field defined just by the user:
+    # -------------
+    hasAddAnOrganization = Column(Boolean, nullable=True)
+    skipResourcesStep = Column(Boolean, nullable=True)
+    hideguidechecklist = Column(Boolean, nullable=True)
+    # -------------
 
-    intergovernmental_model =Column(String,nullable=True)
+    intergovernmental_model = Column(String, nullable=True)
 
-    is_part_of_publication = Column(Boolean,nullable=True)
-    is_public = Column(Boolean,nullable=True)
+    is_part_of_publication = Column(Boolean, nullable=True)
+    is_public = Column(Boolean, nullable=True)
 
     status = Column(Enum(Status, create_constraint=False,
                     native_enum=False), default=Status.in_progress)
-    
-    # 1 digit for decimals
-    rating= Column(Numeric(2, 1), default=0)
-    ratings_count = Column(Integer, default=0) 
 
+    # 1 digit for decimals
+    rating = Column(Numeric(2, 1), default=0)
+    ratings_count = Column(Integer, default=0)
 
     # created by
     creator_id = Column(String, ForeignKey(
@@ -73,30 +73,31 @@ class CoproductionProcess(BaseModel):
 
     organization_id = Column(UUID(as_uuid=True), ForeignKey(
         "organization.id", use_alter=True, ondelete='SET NULL'))
-    organization = relationship('Organization', post_update=True, backref="coproductionprocesses")
+    organization = relationship(
+        'Organization', post_update=True, backref="coproductionprocesses")
 
     teams = association_proxy('permissions', 'team')
-
 
     coproductionprocess_notification_associations = relationship(
         "CoproductionProcessNotification",
         back_populates="coproductionprocess",
         cascade="all, delete-orphan",
     )
-    notifications = association_proxy("coproductionprocess_notification_associations", "notification")
+    notifications = association_proxy(
+        "coproductionprocess_notification_associations", "notification")
 
     coproductionprocess_story_associations = relationship(
         "Story",
         back_populates="coproductionprocess",
         cascade="all, delete-orphan",
     )
-    
+
     # Gamification
     game_id = Column(String, nullable=True)
     # new gamification
     game_gamification_engine = Column(String, nullable=True)
+    game_strategy = Column(String, nullable=True)
 
-    
     # Tags
     tags = relationship(
         'Tag',
@@ -104,13 +105,15 @@ class CoproductionProcess(BaseModel):
         backref='coproductionprocesses',
     )
     tags_ids = association_proxy('tags', 'id')
-    
-    
-    stories = association_proxy("coproductionprocess_story_associations", "story")
-    
-    cloned_from_id = Column(UUID(as_uuid=True), ForeignKey('coproductionprocess.id', ondelete='CASCADE', name='fk_copro_id_cloned_from'), nullable=True)
-    cloned_to = relationship("CoproductionProcess", backref=backref("cloned_from", remote_side=[id]))
-    
+
+    stories = association_proxy(
+        "coproductionprocess_story_associations", "story")
+
+    cloned_from_id = Column(UUID(as_uuid=True), ForeignKey(
+        'coproductionprocess.id', ondelete='CASCADE', name='fk_copro_id_cloned_from'), nullable=True)
+    cloned_to = relationship("CoproductionProcess",
+                             backref=backref("cloned_from", remote_side=[id]))
+
     @aggregated('children', Column(Date))
     def end_date(self):
         return func.max(Phase.end_date)
@@ -123,7 +126,7 @@ class CoproductionProcess(BaseModel):
     @property
     def enabled_teams(self):
         return [perm.team for perm in self.permissions if not perm.treeitem or (perm.treeitem and not perm.treeitem.disabled_on)]
-    
+
     @property
     def enabled_permissions(self):
         return [perm for perm in self.permissions if not perm.treeitem or (perm.treeitem and not perm.treeitem.disabled_on)]
@@ -154,10 +157,9 @@ class CoproductionProcess(BaseModel):
                             if not task.disabled_on:
                                 res.append(task.id)
         return res
-    
-
 
     # Define the serialize function
+
     def to_dict(self):
         return {
             'id': str(self.id),
@@ -184,10 +186,10 @@ class CoproductionProcess(BaseModel):
             'administrators': [admin.email for admin in self.administrators],
             'game_id': self.game_id,
             'game_gamification_engine': self.game_gamification_engine,
+            'game_strategy': self.game_strategy,
             'tags': [str(tag.name) for tag in self.tags],
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'logotype_link': self.logotype_link,
 
         }
-

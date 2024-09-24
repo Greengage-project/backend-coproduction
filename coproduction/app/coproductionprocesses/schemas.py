@@ -35,6 +35,7 @@ class CoproductionProcessBase(BaseModel):
     is_public: Optional[bool]
     game_id: Optional[str]
     game_gamification_engine: Optional[str]
+    game_strategy: Optional[str]
     rating: Optional[float]
     ratings_count: Optional[int]
 
@@ -57,6 +58,7 @@ class CoproductionProcessPatch(CoproductionProcessCreate):
     language: Optional[Languages]
     game_id: Optional[str]
     game_gamification_engine: Optional[str]
+    game_strategy: Optional[str]
     tags: Optional[List]
     rating: Optional[float]
     ratings_count: Optional[int]
