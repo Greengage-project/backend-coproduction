@@ -48,7 +48,7 @@ class CoproductionProcessCreate(CoproductionProcessBase):
 
 
 class CoproductionProcessPatch(CoproductionProcessCreate):
-    name:  Optional[str]
+    name: Optional[str]
     status: Optional[Status]
     logotype: Optional[str]
     incentive_and_rewards_state: Optional[bool]
@@ -90,7 +90,7 @@ class CoproductionProcessOut(CoproductionProcess):
 
     tags: List
 
-    @validator('administrators_ids', pre=True)
+    @validator("administrators_ids", pre=True)
     def administrators_ids_to_list(cls, v):
         return list(v)
 

@@ -88,16 +88,6 @@ async def get_game(
 
     response[0] = get_game_config(response[0], coproductionprocess)
 
-    print("-----------------------------------")
-    print("1")
-    print("1")
-    print("1")
-    print("1")
-    print("1")
-    print("1")
-    print("1")
-    print(response)
-    print("-----------------------------------")
     return response
 
 
