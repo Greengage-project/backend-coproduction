@@ -55,7 +55,7 @@ class TaskReward(BaseModel):
 
     minutes: int
     contribution: str
-    contributionRating: int
+    contributionRating: float
 
     class Config:
         orm_mode = True
