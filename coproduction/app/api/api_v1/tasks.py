@@ -11,9 +11,8 @@ from app.messages import log
 router = APIRouter()
 
 from app.tasks.schemas import *
-from app.models import  CoproductionProcessNotification
+from app.models import CoproductionProcessNotification
 from sqlalchemy import or_, and_
-
 
 
 @router.get("", response_model=List[schemas.TaskOut])
@@ -85,6 +84,7 @@ async def read_task(
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return task
 
+
 @router.delete("/{id}")
 async def delete_task(
     *,
@@ -103,7 +103,39 @@ async def delete_task(
     await crud.task.remove(db=db, id=id, user_id=current_user.id)
     return None
 
-@router.get("/{id}/listTaskAssetsContributions", response_model=TaskAssetContributionsOut)
+
+#  `/${this.url}/${taskId}/checkTaskAndResource/${resourceId}`
+@router.get(
+    "/{taskId}/checkTaskAndResource/{resourceId}/{coproductionprocesses}",
+    response_model=bool,
+)
+async def check_task_and_resource(
+    *,
+    db: Session = Depends(deps.get_db),
+    taskId: uuid.UUID,
+    resourceId: uuid.UUID,
+    coproductionprocesses: uuid.UUID,
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Check if task and resource are related.
+    """
+    if task := await crud.task.get(db=db, id=taskId):
+        # asset should have resourceId as id and taskId as task_id
+        resource = await crud.asset.get(db=db, id=resourceId)
+        if (
+            resource
+            and resource.task_id == taskId
+            and resource.coproductionprocess_id == coproductionprocesses
+        ):
+            return True
+
+    return False
+
+
+@router.get(
+    "/{id}/listTaskAssetsContributions", response_model=TaskAssetContributionsOut
+)
 async def list_task_asset_contributions(
     *,
     db: Session = Depends(deps.get_db),
@@ -117,33 +149,38 @@ async def list_task_asset_contributions(
 
     if task := await crud.task.get(db=db, id=id):
 
-        listofAssets=await crud.asset.get_multi(db=db,task=task)
+        listofAssets = await crud.asset.get_multi(db=db, task=task)
 
-        #print('El numero de assets is:')
-        #print(len(listofAssets))
-        listOfAssetsContributions=[]
-        #Get all assets and all contributions of the each one
-        for idx in range(len(listofAssets)): 
-            #print('El asset es:')
-            #print(listofAssets[idx])
-
+        # print('El numero de assets is:')
+        # print(len(listofAssets))
+        listOfAssetsContributions = []
+        # Get all assets and all contributions of the each one
+        for idx in range(len(listofAssets)):
+            # print('El asset es:')
+            # print(listofAssets[idx])
 
             if asset := await crud.asset.get(db=db, id=listofAssets[idx].id):
-                #print('Encontro el asset!!')
-                #print(asset.id)
-                #Get all contribution of users:
-                listofContribucionesNotifications = db.query(CoproductionProcessNotification).filter(and_(
-                                                                                models.CoproductionProcessNotification.asset_id==str(asset.id),
-                                                                                models.CoproductionProcessNotification.user_id!=None
-                                                                                )                                                                                             
-                                                                            ).order_by(models.CoproductionProcessNotification.created_at.desc()).all()
-                
-                asset.contributors=listofContribucionesNotifications
-                listOfAssetsContributions.append(asset)
-             
+                # print('Encontro el asset!!')
+                # print(asset.id)
+                # Get all contribution of users:
+                listofContribucionesNotifications = (
+                    db.query(CoproductionProcessNotification)
+                    .filter(
+                        and_(
+                            models.CoproductionProcessNotification.asset_id
+                            == str(asset.id),
+                            models.CoproductionProcessNotification.user_id != None,
+                        )
+                    )
+                    .order_by(models.CoproductionProcessNotification.created_at.desc())
+                    .all()
+                )
 
-        #print('El task es:')
-        #print(task)
-        task.assetsWithContribution=listOfAssetsContributions
+                asset.contributors = listofContribucionesNotifications
+                listOfAssetsContributions.append(asset)
+
+        # print('El task es:')
+        # print(task)
+        task.assetsWithContribution = listOfAssetsContributions
         return task
     raise HTTPException(status_code=404, detail="Task not found")

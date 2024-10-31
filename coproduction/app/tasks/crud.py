@@ -17,19 +17,43 @@ from app.sockets import socket_manager
 from app import models
 import html
 
+
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
-    async def create_from_metadata(self, db: Session, taskmetadata: dict, objective: Objective = None, schema_id = uuid.UUID) -> Optional[Task]:
+    async def create_from_metadata(
+        self,
+        db: Session,
+        taskmetadata: dict,
+        objective: Objective = None,
+        schema_id=uuid.UUID,
+    ) -> Optional[Task]:
         data = taskmetadata.copy()
         del data["prerequisites_ids"]
         data["problemprofiles"] = [pp["id"] for pp in data.get("problemprofiles", [])]
         data["from_schema"] = schema_id
         data["from_item"] = data.get("id")
         creator = TaskCreate(**data)
-        return await self.create(db=db, obj_in=creator, commit=False, withNotifications=False,withSocketMsn=False, extra={
-            "objective": objective,
-        })
+        return await self.create(
+            db=db,
+            obj_in=creator,
+            commit=False,
+            withNotifications=False,
+            withSocketMsn=False,
+            extra={
+                "objective": objective,
+            },
+        )
 
-    async def create(self, db: Session, *, obj_in: TaskCreate, creator: User = None, extra: dict = {}, commit: bool = True, withNotifications : bool = True, withSocketMsn : bool = True) -> Phase:
+    async def create(
+        self,
+        db: Session,
+        *,
+        obj_in: TaskCreate,
+        creator: User = None,
+        extra: dict = {},
+        commit: bool = True,
+        withNotifications: bool = True,
+        withSocketMsn: bool = True
+    ) -> Phase:
         obj_in_data = jsonable_encoder(obj_in)
         prereqs = obj_in_data.get("prerequisites_ids")
         del obj_in_data["prerequisites_ids"]
@@ -40,77 +64,99 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
 
         if creator:
             db_obj.creator_id = creator.id
-        
+
         db.add(db_obj)
         if commit:
             db.commit()
             db.refresh(db_obj)
             await self.log_on_create(db_obj)
-            
+
         if prereqs:
             for id in prereqs:
                 task = await self.get(db=db, id=id)
                 if task:
-                   await self.add_prerequisite(db=db, task=db_obj, prerequisite=task, commit=False)
+                    await self.add_prerequisite(
+                        db=db, task=db_obj, prerequisite=task, commit=False
+                    )
         if postreqs:
             for id in postreqs:
                 task = await self.get(db=db, id=id)
                 if task:
-                   await self.add_prerequisite(db=db, task=task, prerequisite=db_obj, commit=False)
+                    await self.add_prerequisite(
+                        db=db, task=task, prerequisite=db_obj, commit=False
+                    )
         if commit:
             db.commit()
             db.refresh(db_obj)
 
+        # Save the notifications:
+        if withNotifications:
+            coproduction = await coproductionprocesses_crud.get(
+                db=db, id=db_obj.coproductionprocess_id
+            )
+            notification = await notification_crud.get_notification_by_event(
+                db=db, event="add_task_copro", language=coproduction.language
+            )
+            if notification:
 
-         #Save the notifications:
-        if(withNotifications):
-            coproduction = await coproductionprocesses_crud.get(db=db, id=db_obj.coproductionprocess_id)
-            notification = await notification_crud.get_notification_by_event(db=db, event="add_task_copro",language=coproduction.language)
-            if(notification):
-                
                 treeitem = await treeitems_crud.get(db=db, id=db_obj.id)
-                
-                newCoproNotification=CoproductionProcessNotification()
-                newCoproNotification.notification_id=notification.id
-                newCoproNotification.coproductionprocess_id=coproduction.id
 
-                newCoproNotification.parameters="{'taskName':'"+html.escape(db_obj.name)+"','processName':'"+html.escape(coproduction.name)+"','treeitem_id':'"+str(treeitem.id)+"','copro_id':'"+str(db_obj.coproductionprocess_id)+"'}"
+                newCoproNotification = CoproductionProcessNotification()
+                newCoproNotification.notification_id = notification.id
+                newCoproNotification.coproductionprocess_id = coproduction.id
+
+                newCoproNotification.parameters = (
+                    "{'taskName':'"
+                    + html.escape(db_obj.name)
+                    + "','processName':'"
+                    + html.escape(coproduction.name)
+                    + "','treeitem_id':'"
+                    + str(treeitem.id)
+                    + "','copro_id':'"
+                    + str(db_obj.coproductionprocess_id)
+                    + "'}"
+                )
 
                 db.add(newCoproNotification)
                 db.commit()
                 db.refresh(newCoproNotification)
 
-        # In case there is another node with pre-requisite equal the one 
+        # In case there is another node with pre-requisite equal the one
         # of the task it must change it prerequisite to the new id
-        
+
         # Find other nodes wit the pre-requisite
- 
+
         if prereqs:
             for id in prereqs:
-                #Get all prerrequisites task with the id
-                listTaskWithPrereq=db.query(Task).filter(models.Task.prerequisites_ids==id).all()
-                
+                # Get all prerrequisites task with the id
+                listTaskWithPrereq = (
+                    db.query(Task).filter(models.Task.prerequisites_ids == id).all()
+                )
+
                 for task in listTaskWithPrereq:
-                    #Add the correct prerrequisite (the id of the new node)
-                    if(task.id!=db_obj.id):
-                        #Remove any previous prerrequisite
+                    # Add the correct prerrequisite (the id of the new node)
+                    if task.id != db_obj.id:
+                        # Remove any previous prerrequisite
                         task.prerequisites.clear()
-                        #Append the just created node
+                        # Append the just created node
                         task.prerequisites.append(db_obj)
-                        #Save in database
+                        # Save in database
                         db.add(task)
                         db.commit()
                         db.refresh(task)
-                        
 
-        #Update its id to my
-        if (withSocketMsn):
-            await socket_manager.send_to_id(db_obj.coproductionprocess_id, {"event": "task_created"})
+        # Update its id to my
+        if withSocketMsn:
+            await socket_manager.send_to_id(
+                db_obj.coproductionprocess_id, {"event": "task_created"}
+            )
         return db_obj
 
-    async def add_prerequisite(self, db: Session, task: Task, prerequisite: Task, commit : bool = True) -> Task:
+    async def add_prerequisite(
+        self, db: Session, task: Task, prerequisite: Task, commit: bool = True
+    ) -> Task:
         if task == prerequisite:
-            #print(task, prerequisite)
+            # print(task, prerequisite)
             raise Exception("Same object")
 
         recursive_check(task.id, prerequisite)
@@ -122,10 +168,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
         return task
 
     async def update(
-        self,
-        db: Session,
-        db_obj: Task,
-        obj_in: schemas.TaskPatch
+        self, db: Session, db_obj: Task, obj_in: schemas.TaskPatch
     ) -> Task:
         obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
@@ -140,22 +183,32 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
 
         if db_obj.objective:
             # update objective
-            objective : Objective = db_obj.objective
+            objective: Objective = db_obj.objective
             update_status_and_progress(objective)
             db.add(objective)
 
             # update phase
-            phase : Phase = db_obj.objective.phase
+            phase: Phase = db_obj.objective.phase
             update_status_and_progress(phase)
             db.add(phase)
 
         db.commit()
         db.refresh(db_obj)
         await self.log_on_update(db_obj)
-        await socket_manager.send_to_id(db_obj.coproductionprocess_id, {"event": "task_updated"})
+        await socket_manager.send_to_id(
+            db_obj.coproductionprocess_id, {"event": "task_updated"}
+        )
         return db_obj
 
-    async def remove(self, db: Session, *, id: uuid.UUID, user_id: str = None, remove_definitely: bool = False, withNotifications : bool = True) -> Phase:
+    async def remove(
+        self,
+        db: Session,
+        *,
+        id: uuid.UUID,
+        user_id: str = None,
+        remove_definitely: bool = False,
+        withNotifications: bool = True
+    ) -> Phase:
         obj = db.query(self.model).get(id)
         if not obj:
             raise Exception("Object does not exist")
@@ -164,72 +217,99 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
         else:
             await self.log_on_disable(obj)
 
+        # Save the notifications:
+        if withNotifications:
+            coproduction = await coproductionprocesses_crud.get(
+                db=db, id=obj.coproductionprocess_id
+            )
+            notification = await notification_crud.get_notification_by_event(
+                db=db, event="remove_task_copro", language=coproduction.language
+            )
+            if notification:
 
-        #Save the notifications:
-        if(withNotifications):
-            coproduction = await coproductionprocesses_crud.get(db=db, id=obj.coproductionprocess_id)
-            notification = await notification_crud.get_notification_by_event(db=db, event="remove_task_copro",language=coproduction.language)
-            if(notification):
-                
                 treeitem = await treeitems_crud.get(db=db, id=obj.id)
-                
-                newCoproNotification=CoproductionProcessNotification()
-                newCoproNotification.notification_id=notification.id
-                newCoproNotification.coproductionprocess_id=coproduction.id
 
-                newCoproNotification.parameters="{'objective_treeitem_id':'"+str(obj.objective.id)+"','objectiveName':'"+html.escape(obj.objective.name)+"','phase_treeitem_id':'"+str(obj.objective.phase.id)+"','phaseName':'"+html.escape(obj.objective.phase.name)+"','taskName':'"+html.escape(obj.name)+"','processName':'"+html.escape(coproduction.name)+"','copro_id':'"+str(obj.coproductionprocess_id)+"'}"
+                newCoproNotification = CoproductionProcessNotification()
+                newCoproNotification.notification_id = notification.id
+                newCoproNotification.coproductionprocess_id = coproduction.id
+
+                newCoproNotification.parameters = (
+                    "{'objective_treeitem_id':'"
+                    + str(obj.objective.id)
+                    + "','objectiveName':'"
+                    + html.escape(obj.objective.name)
+                    + "','phase_treeitem_id':'"
+                    + str(obj.objective.phase.id)
+                    + "','phaseName':'"
+                    + html.escape(obj.objective.phase.name)
+                    + "','taskName':'"
+                    + html.escape(obj.name)
+                    + "','processName':'"
+                    + html.escape(coproduction.name)
+                    + "','copro_id':'"
+                    + str(obj.coproductionprocess_id)
+                    + "'}"
+                )
 
                 db.add(newCoproNotification)
                 db.commit()
                 db.refresh(newCoproNotification)
 
+        await treeitems_crud.remove(
+            db=db,
+            obj=obj,
+            model=self.model,
+            user_id=user_id,
+            remove_definitely=remove_definitely,
+        )
 
+    async def copy(
+        self,
+        db: Session,
+        *,
+        obj_in: TaskCreate,
+        coproductionprocess,
+        parent: Objective,
+        extra: dict = {}
+    ) -> Task:
+        # print("COPYING TASK", obj_in)
 
-        await treeitems_crud.remove(db=db, obj=obj, model=self.model, user_id=user_id, remove_definitely=remove_definitely)
-
-    async def copy(self, db: Session, *, obj_in: TaskCreate, coproductionprocess, parent: Objective, extra: dict = {}) -> Task:
-        #print("COPYING TASK", obj_in)
-        
         # Get the new ids of the prerequistes
         prereqs_ids = []
         if obj_in.prerequisites_ids:
             for p_id in obj_in.prerequisites_ids:
-                prereqs_ids.append(extra['Task_'+str(p_id)])
+                prereqs_ids.append(extra["Task_" + str(p_id)])
 
         new_task = TaskCreate(
-                id=uuid.uuid4(),
-                name=obj_in.name,
-                description=obj_in.description,
-                problemprofiles=obj_in.problemprofiles,
-                objective_id=parent.id,
-                objective=parent,
-                # start_date=obj_in.start_date,
-                # end_date=obj_in.end_date,
-                coproductionprocess=coproductionprocess,
-                prerequisites=obj_in.prerequisites,
-                prerequisites_ids=prereqs_ids,
-                #status=obj_in.status,
-                
-                disabler_id= obj_in.disabler_id,
-                disabled_on= obj_in.disabled_on,
-
-                from_item=obj_in.from_item,
-                from_schema=obj_in.from_schema,
-                management=obj_in.management,
-                development=obj_in.development,
-                exploitation=obj_in.exploitation,
-            )
+            id=uuid.uuid4(),
+            name=obj_in.name,
+            description=obj_in.description,
+            problemprofiles=obj_in.problemprofiles,
+            objective_id=parent.id,
+            objective=parent,
+            # start_date=obj_in.start_date,
+            # end_date=obj_in.end_date,
+            coproductionprocess=coproductionprocess,
+            prerequisites=obj_in.prerequisites,
+            prerequisites_ids=prereqs_ids,
+            # status=obj_in.status,
+            disabler_id=obj_in.disabler_id,
+            disabled_on=obj_in.disabled_on,
+            from_item=obj_in.from_item,
+            from_schema=obj_in.from_schema,
+            management=obj_in.management,
+            development=obj_in.development,
+            exploitation=obj_in.exploitation,
+        )
 
         new_task = await self.create(db=db, obj_in=new_task, withNotifications=False)
 
         return new_task
 
     async def log_on_disable(self, obj):
-        enriched: dict = self.enrich_log_data(obj, {
-            "action": "DISABLE"
-        })
+        enriched: dict = self.enrich_log_data(obj, {"action": "DISABLE"})
         await log(enriched)
-        
+
     # Override log methods
     def enrich_log_data(self, obj, logData):
         logData["model"] = "TASK"
@@ -241,6 +321,18 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
         logData["roles"] = obj.user_roles
         return logData
 
+    def get_tasks(self, db, ids):
+        response = []
+        all_tasks = db.query(Task).filter(Task.id.in_(ids)).all()
+        for task in all_tasks:
+            response.append(
+                {
+                    "externalTaskId": str(task.id),
+                    "name": str(task.name),
+                    "status": str(task.status.value),
+                }
+            )
+        return response
 
     # CRUD Permissions
     def can_create(self, user):
@@ -257,5 +349,6 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskPatch]):
 
     def can_remove(self, user, object):
         return user in object.coproductionprocess.administrators
+
 
 exportCrud = CRUDTask(Task)

@@ -199,6 +199,135 @@ async def set_game(
     return response
 
 
+@router.get("/{process_id}/leaderboard")
+async def get_leaderboard(
+    *,
+    db: Session = Depends(deps.get_db),
+    process_id: uuid.UUID,
+    # period="global",
+) -> Any:
+    """
+    Get leaderboard by process_id
+    """
+
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not coproductionprocess.game_id:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    try:
+        response = requests.get(
+            f"http://{service_name}games/{coproductionprocess.game_id}/points",
+            headers={"X-API-Key": api_key},
+        ).json()
+
+        array_externalTaskId = []
+        array_externalUserId = []
+        for task in response["task"]:
+            array_externalTaskId.append(task["externalTaskId"])
+            for point in task["points"]:
+                if point["externalUserId"] not in array_externalUserId:
+                    array_externalUserId.append(point["externalUserId"])
+
+        try:
+            all_task = crud.task.get_tasks(db=db, ids=array_externalTaskId)
+            all_task_dict = {task["externalTaskId"]: task for task in all_task}
+
+            for task in response["task"]:
+                external_task = all_task_dict.get(task["externalTaskId"])
+                if external_task:
+                    task["name"] = external_task["name"]
+                    task["status"] = external_task["status"]
+        except Exception as e:
+            print(e)
+            raise HTTPException(status_code=500, detail="Error getting leaderboard.")
+
+        users = await crud.user.get_users(db=db, ids=array_externalUserId)
+
+        for task in response["task"]:
+            for point in task["points"]:
+                for user in users:
+                    if user["id"] == point["externalUserId"]:
+                        point["full_name"] = user["full_name"]
+                        point["picture"] = user["picture"]
+        response["game_gamification_engine"] = (
+            coproductionprocess.game_gamification_engine
+        )
+        response["game_strategy"] = coproductionprocess.game_strategy
+        return response
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Error getting leaderboard")
+
+
+# rewardPoints
+"""
+const res = await axiosInstance.post(
+      `/${this.url}/rewardPoints/${taskId}/${userId}`,
+      {
+        points,
+        contribution,
+        contributionRating,
+      }
+    );
+"""
+
+
+@router.post("/{process_id}/rewardPoints/{task_id}/{user_id}")
+async def reward_points(
+    *,
+    db: Session = Depends(deps.get_db),
+    process_id: uuid.UUID,
+    task_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: schemas.TaskReward,
+) -> Any:
+    """
+    Reward points by process_id, task_id and user_id.
+    """
+    minutes = body.minutes
+    contribution = body.contribution
+    contributionRating = body.contributionRating
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    if not coproductionprocess.game_id:
+        raise HTTPException(status_code=404, detail="Game not found")
+    #   'http://localhost:8000/api/v1/games/GAMEID/tasks/taskIdd/points' \
+    game_id = coproductionprocess.game_id
+    # check if contributionRating is number (float or int) and between 1 and 5
+    if (
+        not isinstance(contributionRating, (int, float))
+        or contributionRating < 1
+        or contributionRating > 5
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="contributionRating must be a number between 1 and 5",
+        )
+
+    if len(contribution) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="contribution must have at least 3 characters",
+        )
+    response = requests.post(
+        f"http://{service_name}games/{game_id}/tasks/{task_id}/points",
+        json={
+            "externalUserId": str(user_id),
+            "data": {
+                "minutes": minutes,
+                "contribution": contribution,
+                "contributionRating": contributionRating,
+            },
+        },
+        headers={"X-API-Key": api_key},
+    )
+
+    return response.json()
+
+
 # @router.put("/{process_id}")
 # async def update_game(
 #     *,
@@ -291,35 +420,6 @@ async def set_game(
 #     print(response.text)
 #     print("-----------------------------------")
 #     return response.text
-
-
-# @router.get("/{process_id}/leaderboard")
-# async def get_leaderboard(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     process_id: uuid.UUID,
-#     # period="global",
-# ) -> Any:
-#     """
-#     Get leaderboard by process_id.
-#     """
-
-#     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
-#     if not coproductionprocess:
-#         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
-#     if not coproductionprocess.game_id:
-#         raise HTTPException(status_code=404, detail="Game not found")
-
-#     response = requests.get(
-#         f"http://{serviceName}{PATH}/{coproductionprocess.game_id}/player/search",
-#         params={
-#             "period": "global",
-#             "activityType": "development",
-#         },
-#         headers={"Content-type": "application/json", "Accept": "*/*"},
-#     ).json()
-
-#     return response
 
 
 # @router.get("/{process_id}/{task_id}")
