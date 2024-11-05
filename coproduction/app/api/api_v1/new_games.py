@@ -70,6 +70,53 @@ async def list_games() -> Any:
     return json.loads(response.text)
 
 
+# check if game exists in gamification engine
+@router.get("/{process_id}/exists")
+async def game_exists(
+    *,
+    db: Session = Depends(deps.get_db),
+    process_id: uuid.UUID,
+) -> Any:
+    """
+    Check if game exists in gamification engine.
+    """
+    coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
+    if not coproductionprocess:
+        raise HTTPException(status_code=404, detail="CoproductionProcess not found")
+    response = requests.get(
+        f"http://{service_name}games?page_size=all", headers={"X-API-Key": api_key}
+    ).json()
+
+    items = response.get("items", [])
+
+    for game in items:
+        if str(game["externalGameId"]) == str(process_id):
+            return {
+                "exists": True,
+                "gameId": game["gameId"],
+                "game_gamification_engine": "GAME",
+                "game_strategy": "behavioral",
+            }
+    return {"exists": False}
+
+
+@router.delete("/{game_id}")
+async def delete_game(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: Optional[models.User] = Depends(deps.get_current_active_user),
+    game_id: str,
+) -> Any:
+    """
+    Delete game by gameId in gamification engine.
+    """
+    response = requests.delete(
+        f"http://{service_name}games/{game_id}",
+        headers={"X-API-Key": api_key},
+    )
+    return response.json()
+
+
 @router.get("/{process_id}")
 async def get_game(
     *,
@@ -84,14 +131,7 @@ async def get_game(
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     response = requests.get(f"http://{serviceName}{PATH}/processId/{process_id}").json()
 
-    print("-----------------------------------")
-    print("New - GET GAME")
-    print("New - GET GAME")
-    print("New - GET GAME")
-    print("New - GET GAME")
-    print("New - GET GAME")
-    print(response)
-    print("-----------------------------------")
+  
     return response
 
 
