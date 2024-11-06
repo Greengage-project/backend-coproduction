@@ -131,7 +131,6 @@ async def get_game(
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
     response = requests.get(f"http://{serviceName}{PATH}/processId/{process_id}").json()
 
-  
     return response
 
 
@@ -329,6 +328,8 @@ async def reward_points(
     minutes = body.minutes
     contribution = body.contribution
     contributionRating = body.contributionRating
+    timestampsActivity = body.timestampsActivity
+    assetId = body.assetId
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
@@ -358,8 +359,10 @@ async def reward_points(
             "externalUserId": str(user_id),
             "data": {
                 "minutes": minutes,
+                "assetId": assetId,
                 "contribution": contribution,
                 "contributionRating": contributionRating,
+                "timestampsActivity": timestampsActivity,
             },
         },
         headers={"X-API-Key": api_key},

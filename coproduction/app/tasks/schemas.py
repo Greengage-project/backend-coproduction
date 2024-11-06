@@ -54,8 +54,10 @@ class TaskReward(BaseModel):
     """
 
     minutes: int
+    assetId: str
     contribution: str
     contributionRating: float
+    timestampsActivity: List[dict] = []
 
     class Config:
         orm_mode = True
