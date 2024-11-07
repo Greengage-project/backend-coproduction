@@ -113,8 +113,7 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
         # Query and add public info to the asset
         def obtainpublicData(listOfAssets):
-            print('- listOfAssets -')
-            print(listOfAssets)
+
             for asset in listOfAssets:
                 if asset.type == "internalasset":
 
@@ -172,17 +171,11 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
                         else:
                             #print("Es un Internal Asset")
-                            link_parts = os.path.split(asset.link)[0].split('/')
-                            if len(link_parts) > 3:
-                                serviceName = os.path.split(asset.link)[0].split('/')[3]
-                                requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
-                                response = requests.get(requestlink)
-                                datosAsset = response.json()
-                                asset.internalData = datosAsset
-                            else:
-                                print("No se puede obtener la informacion del asset")
-                                print(asset.link)
-                                raise ValueError("El enlace no tiene el formato esperado")
+                            serviceName = os.path.split(asset.link)[0].split('/')[3]
+                            requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
+                            response = requests.get(requestlink)
+                            datosAsset = response.json()
+                            asset.internalData = datosAsset
 
                 if asset.type == "externalasset":
                     #print("Es un External Asset")
