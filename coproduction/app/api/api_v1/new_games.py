@@ -140,6 +140,10 @@ async def set_game(
             json=create_game_body,
             headers={"X-API-Key": api_key},
         )
+        print('---------')
+        print(response)
+        response_json = response.json()
+        print(response_json)
 
         if (
             response.status_code == 409
@@ -150,6 +154,8 @@ async def set_game(
         else:
             external_gameId = response.json()["gameId"]
     except Exception as e:
+        # print line to debug in case of error
+        print("set_game | except Exception as e:")
         print(e)
 
         raise HTTPException(status_code=500, detail="Error creating game")
