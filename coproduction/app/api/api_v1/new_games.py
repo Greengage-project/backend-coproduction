@@ -30,7 +30,6 @@ service_name = settings.NEW_GAMIFICATION_SERVICE_NAME
 api_key = settings.NEW_GAMIFICATION_API_KEY
 
 
-
 @router.get("")
 async def list_games() -> Any:
     """
@@ -127,7 +126,6 @@ async def set_game(
         raise HTTPException(status_code=403, detail="Not enough permissions")
     if not taskList:
         raise HTTPException(status_code=400, detail="TaskList not found")
-
 
     create_game_body = {
         "externalGameId": str(process_id),
@@ -346,22 +344,22 @@ async def action(
     coproductionprocess = await crud.coproductionprocess.get(db=db, id=process_id)
     if not coproductionprocess:
         raise HTTPException(status_code=404, detail="CoproductionProcess not found")
-
+    dataBody = {
+        "minutes": minutes,
+        "assetId": assetId,
+        "contribution": contribution,
+        "contributionRating": contributionRating,
+        "timestampsActivity": timestampsActivity,
+    }
     response = requests.post(
         f"http://{service_name}users/{ str(user_id)}/actions",
         json={
             "typeAction": "new_contribution",
             "description": "-",
-            "data": {
-                "minutes": minutes,
-                "assetId": assetId,
-                "contribution": contribution,
-                "contributionRating": contributionRating,
-                "timestampsActivity": timestampsActivity,
-            },
+            "data": dataBody,
+            "userId": str(user_id),
         },
         headers={"X-API-Key": api_key},
     )
 
     return response.json()
-
