@@ -113,7 +113,8 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
         # Query and add public info to the asset
         def obtainpublicData(listOfAssets):
-
+            print('- listOfAssets -')
+            print(listOfAssets)
             for asset in listOfAssets:
                 if asset.type == "internalasset":
 
@@ -205,6 +206,7 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             ).order_by(models.Asset.created_at.desc()).all()
 
             # Agrego informacion del asset interno
+            print('* 3')
             listOfAssets = obtainpublicData(listOfAssets)
 
             return listOfAssets
@@ -223,6 +225,7 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             ).order_by(models.Asset.created_at.desc()).all()
 
             # Agrego informacion del asset interno
+            print('* 2')
             listOfAssets = obtainpublicData(listOfAssets)
 
             return listOfAssets
@@ -250,6 +253,7 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
                 listOfAssets.remove(asset)
 
         # Agrego informacion del asset interno
+        print('* 1')
         listOfAssets = obtainpublicData(listOfAssets)
 
         return listOfAssets
