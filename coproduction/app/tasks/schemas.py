@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.treeitems.schemas import *
 from app.assets.schemas import *
 
+
 class TaskCreate(TreeItemCreate):
     objective_id: Optional[uuid.UUID]
     problemprofiles: Optional[list]
@@ -14,22 +15,22 @@ class TaskCreate(TreeItemCreate):
     disabled_on: Optional[datetime]
     start_date: Optional[date]
     end_date: Optional[date]
-    
+
     management: Optional[int]
     development: Optional[int]
     exploitation: Optional[int]
-    
+
 
 class TaskPatch(TreeItemPatch):
     problemprofiles: Optional[list]
     status: Optional[str]
     start_date: Optional[date]
     end_date: Optional[date]
-    
+
     management: Optional[int]
     development: Optional[int]
     exploitation: Optional[int]
-    
+
 
 class Task(TreeItem, TaskCreate):
     class Config:
@@ -42,6 +43,27 @@ class TaskOut(Task, TreeItemOut):
 
 class TaskAssetContributionsOut(Task):
     assetsWithContribution: List[AssetOutContributions]
-    
+
     class Config:
         orm_mode = True
+
+
+class TaskReward(BaseModel):
+    """
+    Task reward schema for the API
+    """
+
+    minutes: int
+    assetId: str
+    contribution: str
+    contributionRating: float
+    timestampsActivity: List[dict] = []
+
+    class Config:
+        orm_mode = True
+
+
+class TaskAction(TaskReward):
+    """
+    Task action schema for the API
+    """

@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     PROTOCOL: str
     SERVER_NAME: str
     BASE_PATH: str
-    COMPLETE_SERVER_NAME: AnyHttpUrl = os.getenv(
-        "PROTOCOL") + os.getenv("SERVER_NAME") + os.getenv("BASE_PATH")
+    COMPLETE_SERVER_NAME: AnyHttpUrl = (
+        os.getenv("PROTOCOL") + os.getenv("SERVER_NAME") + os.getenv("BASE_PATH")
+    )
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME = "Coproduction API"
 
@@ -46,14 +47,17 @@ class Settings(BaseSettings):
         )
 
     DEFAULT_LANGUAGE: str
-    ALLOWED_LANGUAGES_LIST: list = os.getenv(
-        "ALLOWED_LANGUAGES", "").split(",")
+    ALLOWED_LANGUAGES_LIST: list = os.getenv("ALLOWED_LANGUAGES", "").split(",")
 
     # OTHER MICROS
     CATALOGUE_SERVICE_NAME: str
     CATALOGUE_PORT: int
-    CATALOGUE_SERVICE: str = os.getenv(
-        "CATALOGUE_SERVICE_NAME") + ":" + os.getenv("CATALOGUE_PORT")
+    CATALOGUE_SERVICE: str = (
+        os.getenv("CATALOGUE_SERVICE_NAME") + ":" + os.getenv("CATALOGUE_PORT")
+    )
+
+    NEW_GAMIFICATION_SERVICE_NAME: str = os.getenv("NEW_GAMIFICATION_SERVICE_NAME")
+    NEW_GAMIFICATION_API_KEY: str = os.getenv("NEW_GAMIFICATION_API_KEY")
 
     # MAIL
     SMTP_TLS: bool = os.getenv("SMTP_TLS", False)
@@ -62,9 +66,9 @@ class Settings(BaseSettings):
     SMTP_USER: Optional[str] = os.getenv("SMTP_USER")
     SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD")
     EMAILS_FROM_EMAIL: Optional[str] = os.getenv(
-        "EMAILS_FROM_EMAIL", "support@greengage-project.eu")
-    EMAILS_FROM_NAME: Optional[str] = os.getenv(
-        "EMAILS_FROM_NAME", "Greengage Project")
+        "EMAILS_FROM_EMAIL", "support@greengage-project.eu"
+    )
+    EMAILS_FROM_NAME: Optional[str] = os.getenv("EMAILS_FROM_NAME", "Greengage Project")
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAIL_TEMPLATES_DIR: str = "/app/email-templates/build"
     EMAILS_ENABLED: bool = True
