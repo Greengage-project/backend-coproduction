@@ -64,11 +64,6 @@ async def list_games() -> Any:
     Retrieve games.
     """
     response = requests.get(f"http://{serviceName}{PATH}")
-    print("***********************************")
-    print('@router.get("")')
-    print("***********************************")
-    print(json.loads(response.text))
-    print("-----------------------------------")
     return json.loads(response.text)
 
 
@@ -124,12 +119,6 @@ async def set_game(
         json=data,
         headers={"Content-type": "application/json", "Accept": "*/*"},
     )
-
-    print("***********************************")
-    print('@router.post("/{process_id}")')
-    print("***********************************")
-    print(response.text)
-    print("-----------------------------------")
     if response.status_code == 200:
         coproductionprocess.game_id = response.json()["id"]
         coproductionprocess.game_gamification_engine = "old_gamification"
@@ -194,11 +183,6 @@ async def update_game(
         headers={"Content-type": "application/json", "Accept": "*/*"},
     )
 
-    print("***********************************")
-    print('@router.put("/{process_id}")')
-    print("***********************************")
-    print(response.text)
-    print("-----------------------------------")
     return response.text
 
 
@@ -227,11 +211,6 @@ async def delete_game(
         headers={"Content-type": "application/json", "Accept": "*/*"},
     )
 
-    print("***********************************")
-    print('@router.delete("/{process_id}")')
-    print("***********************************")
-    print(response.text)
-    print("-----------------------------------")
     return response.text
 
 
@@ -322,11 +301,7 @@ async def update_task(
         json=data,
         headers={"Content-type": "application/json", "Accept": "*/*"},
     )
-    print("***********************************")
-    print('@router.put("/{process_id}/{task_id}")')
-    print("***********************************")
-    print(response.json())
-    print("-----------------------------------")
+
     return response.json()
 
 
@@ -444,11 +419,4 @@ async def revert_task(
             json=data,
             headers={"Content-type": "application/json", "Accept": "*/*"},
         )
-    print("***********************************")
-    print('@router.delete("/{process_id}/{task_id}/revert")')
-    print("***********************************")
-    print(response.json())
-    print("-----------------------------------")
-    print(task.json())
-    print("-----------------------------------")
     return response.json()

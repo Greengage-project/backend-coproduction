@@ -104,7 +104,6 @@ async def delete_task(
     return None
 
 
-#  `/${this.url}/${taskId}/checkTaskAndResource/${resourceId}`
 @router.get(
     "/{taskId}/checkTaskAndResource/{resourceId}/{coproductionprocesses}",
     response_model=bool,
@@ -151,18 +150,10 @@ async def list_task_asset_contributions(
 
         listofAssets = await crud.asset.get_multi(db=db, task=task)
 
-        # print('El numero de assets is:')
-        # print(len(listofAssets))
-        listOfAssetsContributions = []
-        # Get all assets and all contributions of the each one
-        for idx in range(len(listofAssets)):
-            # print('El asset es:')
-            # print(listofAssets[idx])
 
+        listOfAssetsContributions = []
+        for idx in range(len(listofAssets)):
             if asset := await crud.asset.get(db=db, id=listofAssets[idx].id):
-                # print('Encontro el asset!!')
-                # print(asset.id)
-                # Get all contribution of users:
                 listofContribucionesNotifications = (
                     db.query(CoproductionProcessNotification)
                     .filter(
@@ -179,8 +170,6 @@ async def list_task_asset_contributions(
                 asset.contributors = listofContribucionesNotifications
                 listOfAssetsContributions.append(asset)
 
-        # print('El task es:')
-        # print(task)
         task.assetsWithContribution = listOfAssetsContributions
         return task
     raise HTTPException(status_code=404, detail="Task not found")

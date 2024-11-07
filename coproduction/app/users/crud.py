@@ -62,8 +62,6 @@ class CRUDUser(CRUDBase[models.User, UserCreate, UserPatch]):
         return
 
     async def get_users(self, db: Session, ids: List[uuid.UUID]) -> List[models.User]:
-        # retrieve only  "picture" , "full_name" and "id" fields
-        # return db.query(models.User).filter(models.User.id.in_(ids)).all()
         db_obj = db.query(models.User).filter(models.User.id.in_(ids)).all()
         response = []
         for user in db_obj:

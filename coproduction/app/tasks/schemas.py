@@ -61,3 +61,9 @@ class TaskReward(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class TaskAction(TaskReward):
+    """
+    Task action schema for the API
+    """

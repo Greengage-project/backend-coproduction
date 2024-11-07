@@ -41,15 +41,12 @@ class CoproductionProcess(BaseModel):
     challenges = Column(Text, nullable=True)
     requirements = Column(Text, nullable=True)
 
-    # Active Optional Modules
     incentive_and_rewards_state = Column(Boolean, nullable=True)
 
-    # Optional field defined just by the user:
-    # -------------
+    
     hasAddAnOrganization = Column(Boolean, nullable=True)
     skipResourcesStep = Column(Boolean, nullable=True)
     hideguidechecklist = Column(Boolean, nullable=True)
-    # -------------
 
     intergovernmental_model = Column(String, nullable=True)
 
@@ -61,11 +58,9 @@ class CoproductionProcess(BaseModel):
         default=Status.in_progress,
     )
 
-    # 1 digit for decimals
     rating = Column(Numeric(2, 1), default=0)
     ratings_count = Column(Integer, default=0)
 
-    # created by
     creator_id = Column(
         String, ForeignKey("user.id", use_alter=True, ondelete="SET NULL")
     )
