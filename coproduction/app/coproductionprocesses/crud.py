@@ -171,11 +171,17 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
                         else:
                             #print("Es un Internal Asset")
-                            serviceName = os.path.split(asset.link)[0].split('/')[3]
-                            requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
-                            response = requests.get(requestlink)
-                            datosAsset = response.json()
-                            asset.internalData = datosAsset
+                            link_parts = os.path.split(asset.link)[0].split('/')
+                            if len(link_parts) > 3:
+                                serviceName = os.path.split(asset.link)[0].split('/')[3]
+                                requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
+                                response = requests.get(requestlink)
+                                datosAsset = response.json()
+                                asset.internalData = datosAsset
+                            else:
+                                print("No se puede obtener la informacion del asset")
+                                print(asset.link)
+                                raise ValueError("El enlace no tiene el formato esperado")
 
                 if asset.type == "externalasset":
                     #print("Es un External Asset")
