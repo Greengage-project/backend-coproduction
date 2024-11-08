@@ -26,8 +26,10 @@ class Asset(BaseModel):
     # discriminator
     type = Column(String)
 
-    task_id = Column(UUID(as_uuid=True), ForeignKey("task.id", ondelete='CASCADE'))
-    task = orm.relationship("Task", backref=orm.backref('assets', passive_deletes=True))
+    task_id = Column(UUID(as_uuid=True), ForeignKey(
+        "task.id", ondelete='CASCADE'))
+    task = orm.relationship("Task", backref=orm.backref(
+        'assets', passive_deletes=True))
 
     # to simplify queries
     objective_id = Column(UUID(as_uuid=True))
@@ -35,8 +37,10 @@ class Asset(BaseModel):
     coproductionprocess_id = Column(UUID(as_uuid=True))
 
     # created by
-    creator_id = Column(String, ForeignKey("user.id", use_alter=True, ondelete='SET NULL'))
-    creator = orm.relationship('User', foreign_keys=[creator_id], post_update=True, backref="created_assets")
+    creator_id = Column(String, ForeignKey(
+        "user.id", use_alter=True, ondelete='SET NULL'))
+    creator = orm.relationship('User', foreign_keys=[
+                               creator_id], post_update=True, backref="created_assets")
 
     # asset_copronotification_associations = orm.relationship(
     #     "CoproductionProcessNotification",
@@ -44,12 +48,31 @@ class Asset(BaseModel):
     # )
     # copronotifications = association_proxy("asset_copronotification_associations", "copronotification")
 
-
-
     __mapper_args__ = {
         "polymorphic_identity": "asset",
         "polymorphic_on": type,
     }
+
+    def __repr__(self):
+        return f"<Asset(id={self.id}, type='{self.type}', task_id={self.task_id}, creator_id={self.creator_id})>"
+
+    def __str__(self):
+        return f"Asset (ID: {self.id}, Type: {self.type}, Task ID: {self.task_id})"
+
+    def to_dict(self):
+        """
+        Convierte la instancia en un diccionario, útil para serialización.
+        """
+        return {
+            "id": str(self.id),
+            "type": self.type,
+            "task_id": str(self.task_id) if self.task_id else None,
+            "objective_id": str(self.objective_id) if self.objective_id else None,
+            "phase_id": str(self.phase_id) if self.phase_id else None,
+            "coproductionprocess_id": str(self.coproductionprocess_id) if self.coproductionprocess_id else None,
+            "creator_id": self.creator_id
+        }
+
 
 class InternalAsset(Asset):
     id = Column(
@@ -69,18 +92,19 @@ class InternalAsset(Asset):
 
     def __repr__(self):
         return "<Asset %r>" % self.id
-    
+
     @cached_property
     def software_response(self):
         return requests.get(
             f"http://{settings.CATALOGUE_SERVICE}/api/v1/interlinkers/{self.softwareinterlinker_id}").json()
-    
+
     @cached_property
     def knowledge_response(self):
         if self.knowledgeinterlinker_id:
             return requests.get(
                 f"http://{settings.CATALOGUE_SERVICE}/api/v1/interlinkers/{self.knowledgeinterlinker_id}").json()
         return
+
     @property
     def knowledgeinterlinker(self):
         return {
@@ -146,7 +170,7 @@ class ExternalAsset(Asset):
         if self.externalinterlinker_id:
             return requests.get(f"http://{settings.CATALOGUE_SERVICE}/api/v1/interlinkers/{self.externalinterlinker_id}").json()
         return
-    
+
     @property
     def externalinterlinker(self):
         return {
