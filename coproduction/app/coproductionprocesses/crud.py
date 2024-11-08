@@ -171,6 +171,20 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
                         else:
                             #print("Es un Internal Asset")
+                            print('-------------------------------------------')
+                            print(asset.link)
+                            print('-------------------------------------------')
+                            print(asset.type)
+                            print('-------------------------------------------')
+                            print(asset.external_asset_id)
+                            print('-------------------------------------------')
+                            print(asset.id)
+                            print('-------------------------------------------')
+                            print('*******************************************')
+                            print('*******************************************')
+                            print('*******************************************')
+                            print('*******************************************')
+                            print('*******************************************')
                             serviceName = os.path.split(asset.link)[0].split('/')[3]
                             requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
                             response = requests.get(requestlink)
