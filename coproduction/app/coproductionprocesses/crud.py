@@ -62,7 +62,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
     async def get_multi_public(self, db: Session, exclude: list = [], search: str = "", rating: int = 0, language: str = "en", tag: list = []
                                ) -> Optional[List[CoproductionProcess]]:
         
-        print("tag", tag)
 
         queries = []
 
@@ -141,10 +140,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
                             responseDataJson=response.json()
 
-                            print('Response:')                            
-                            print(responseDataJson)
-                            print('--------')
-
                             asset_name=responseDataJson.name
                             print(asset_name)
                         except  Exception:
@@ -157,34 +152,14 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
                     else:
 
                         if ('servicepedia' in asset.link):
-                            #print(" Es un Servicepedia")
-                            # #print('Es servicepedia')
-
                             requestlink = f"http://augmenterservice/assets/{asset.external_asset_id}"
                             response = requests.get(requestlink)
                             datosAsset = response.json()
-                            #print(datosAsset)
-
                             asset_uri = asset.link+'/view'
                             asset.internalData = {
                                 'icon': 'https://'+serverName+'/catalogue/static/augmenter/logotype.png', 'name': datosAsset['name'], 'link': asset_uri}
 
                         else:
-                            #print("Es un Internal Asset")
-                            print('-------------------------------------------')
-                            print(asset.link)
-                            print('-------------------------------------------')
-                            print(asset.type)
-                            print('-------------------------------------------')
-                            print(asset.external_asset_id)
-                            print('-------------------------------------------')
-                            print(asset.id)
-                            print('-------------------------------------------')
-                            print('*******************************************')
-                            print('*******************************************')
-                            print('*******************************************')
-                            print('*******************************************')
-                            print('*******************************************')
                             serviceName = os.path.split(asset.link)[0].split('/')[3]
                             requestlink = f"http://{serviceName}/assets/{asset.external_asset_id}"
                             response = requests.get(requestlink)
@@ -192,7 +167,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
                             asset.internalData = datosAsset
 
                 if asset.type == "externalasset":
-                    #print("Es un External Asset")
                     queries = []
                     queries.append(Asset.id == asset.id)
                     datosAsset = db.query(Asset).filter(*queries).first()
@@ -201,11 +175,9 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
 
             return listOfAssets
 
-        # En el caso que seas un administrador del proceso (muestro todo):
 
         # or self.can_read(db, user, coproductionprocess):
         if user in coproductionprocess.administrators:
-            # print('Es administrador!!')
             listOfAssets = db.query(
                 Asset
             ).filter(
@@ -213,7 +185,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             ).order_by(models.Asset.created_at.desc()).all()
 
             # Agrego informacion del asset interno
-            print('* 3')
             listOfAssets = obtainpublicData(listOfAssets)
 
             return listOfAssets
@@ -232,7 +203,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
             ).order_by(models.Asset.created_at.desc()).all()
 
             # Agrego informacion del asset interno
-            print('* 2')
             listOfAssets = obtainpublicData(listOfAssets)
 
             return listOfAssets
@@ -260,7 +230,6 @@ class CRUDCoproductionProcess(CRUDBase[CoproductionProcess, CoproductionProcessC
                 listOfAssets.remove(asset)
 
         # Agrego informacion del asset interno
-        print('* 1')
         listOfAssets = obtainpublicData(listOfAssets)
 
         return listOfAssets
