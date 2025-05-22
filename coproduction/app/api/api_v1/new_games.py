@@ -349,7 +349,21 @@ async def action(
         "contributionRating": contributionRating,
         "timestampsActivity": timestampsActivity,
     }
-    response = requests.post(
+    print('------------------------------ DEBUG ----------------------------------')
+    print(dataBody)
+    print('-----------------------------------------------------------------------')
+    print( f"http://{service_name}users/{ str(user_id)}/actions")
+    print('----------------------------------------------------------------------')
+    print(
+       {
+            "typeAction": "new_contribution",
+            "description": "-",
+            "data": dataBody,
+            "userId": str(user_id),
+        }
+    )
+    print('----------------------------END DEBUG------------------------------------')
+    response = await requests.post(
         f"http://{service_name}users/{ str(user_id)}/actions",
         json={
             "typeAction": "new_contribution",
