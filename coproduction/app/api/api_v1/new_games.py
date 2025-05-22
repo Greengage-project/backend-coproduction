@@ -373,5 +373,13 @@ async def action(
         },
         headers={"X-API-Key": api_key},
     )
-
-    return response.json()
+    try:
+        return response.json()
+    except Exception as e:
+        print("action | except Exception as e:")
+        print(e)
+        print('***************** ERROR *****************')
+        print(f"Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        print('*****************************************')
+        raise HTTPException(status_code=500, detail="Error creating action")
