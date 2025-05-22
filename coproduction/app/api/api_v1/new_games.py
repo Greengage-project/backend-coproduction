@@ -304,20 +304,6 @@ async def reward_points(
             status_code=400,
             detail="contribution must have at least 3 characters",
         )
-    
-    print('-------------------------------------')
-    print(f"http://{service_name}games/{game_id}/tasks/{task_id}/points")
-    print({
-            "externalUserId": str(user_id),
-            "data": {
-                "minutes": minutes,
-                "assetId": assetId,
-                "contribution": contribution,
-                "contributionRating": contributionRating,
-                "timestampsActivity": timestampsActivity,
-            },
-        })
-    print('-------------------------------------')
     response = requests.post(
         f"http://{service_name}games/{game_id}/tasks/{task_id}/points",
         json={
