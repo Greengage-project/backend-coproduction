@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 import threading
-
 import emails
 from emails import Message
 import uuid
@@ -119,8 +118,9 @@ def send_email(
 def send_team_email(
     team: Team,
     type: str = "",
-    environment: Dict[str, Any] = {},
+    environment: Optional[Dict[str, Any]] = None,
 ) -> None:
+    environment = environment or {}
     assert settings.EMAILS_ENABLED, "no provided configuration for email variables"
 
     environment["server"] = settings.SERVER_NAME
@@ -160,7 +160,11 @@ def send_team_email(
             treeitem_id=environment['treeitem_id'])
     elif type == 'ask_team_contribution':
         subject = environment['subject']
-    print('*********************** SEND EMAIL')
+        if not environment['link'].startswith("http"):
+            environment['link'] = f"https://{settings.SERVER_NAME}/{environment['link'].lstrip('/')}"
+    print('*********************** SEND EMAIL 2')
+    print(settings.EMAILS_ENABLED)
+    print(settings.SERVER_NAME)
     print(team)
     print(type)
     print(environment)
