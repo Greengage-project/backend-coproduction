@@ -50,6 +50,7 @@ def send_email(
     type: str = "",
     environment: Dict[str, Any] = {},
 ) -> None:
+    
     assert settings.EMAILS_ENABLED, "no provided configuration for email variables"
 
     environment["server"] = settings.SERVER_NAME
@@ -88,6 +89,10 @@ def send_email(
     # Load HTML template
     with open(Path(settings.EMAIL_TEMPLATES_DIR) / "{type}.html".format(type=type)) as f:
         template_str = f.read()
+    print('*********************** SEND EMAIL')
+    print(email_to)
+    print(type)
+    print(environment)
     template = JinjaTemplate(template_str)
 
     # Create EmailMessage instance
@@ -155,7 +160,10 @@ def send_team_email(
             treeitem_id=environment['treeitem_id'])
     elif type == 'ask_team_contribution':
         subject = environment['subject']
-
+    print('*********************** SEND EMAIL')
+    print(team)
+    print(type)
+    print(environment)
     with open(Path(settings.EMAIL_TEMPLATES_DIR) / "{type}.html".format(type=type)) as f:
         template_str = f.read()
     template = JinjaTemplate(template_str)
