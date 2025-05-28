@@ -274,16 +274,15 @@ async def create_copro_notification(
                                 db.add(newUserNotification)
                                 db.commit()
                                 db.refresh(newUserNotification)
-                    print('*****************************************')
-                    print('[STAGE 1] Sending email to team ')
-                    print(data)
-                    send_team_email(team, "ask_team_contribution",
-                                    {"link": data.link,
-                                     "icon_link": data.icon,
-                                     "instructions": data.instructions,
-                                     "asset_name": data.asset_name,
-                                     "subject": data.subject
-                                     })
+                    send_team_email(team, "ask_team_contribution", {
+                        "link": getattr(data, "link", ""),
+                        "icon_link": getattr(data, "icon", ""),
+                        "instructions": getattr(data, "instructions", ""),
+                        "asset_name": getattr(data, "asset_name", ""),
+                        "subject": getattr(data, "subject", ""),
+                        "processId": str(getattr(data, "processId", "")),
+                        "asset_id": str(getattr(data, "asset_id", "")),
+                    })
 
     return "Done"
 
@@ -322,9 +321,6 @@ async def create_user_copro_notification(
                     db.add(newUserNotification)
                     db.commit()
                     db.refresh(newUserNotification)
-                print('*****************************************')
-                print('[STAGE 1] Sending email to user ')
-                print(data)
                 send_email(user.email, "ask_team_contribution",
                                 {"link": data.link,
                                     "icon_link": data.icon,

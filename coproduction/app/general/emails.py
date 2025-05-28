@@ -84,14 +84,15 @@ def send_email(
 
     elif type == 'ask_team_contribution':
         subject = environment['subject']
+        environment["link"] = 'https://{server}/dashboard/coproductionprocesses/{processId}/{asset_id}/view'.format(
+            server=settings.SERVER_NAME,
+            processId=environment['processId'],
+            asset_id=environment['asset_id'])
 
     # Load HTML template
     with open(Path(settings.EMAIL_TEMPLATES_DIR) / "{type}.html".format(type=type)) as f:
         template_str = f.read()
-    print('*********************** SEND EMAIL')
-    print(email_to)
-    print(type)
-    print(environment)
+
     template = JinjaTemplate(template_str)
 
     # Create EmailMessage instance
@@ -160,14 +161,12 @@ def send_team_email(
             treeitem_id=environment['treeitem_id'])
     elif type == 'ask_team_contribution':
         subject = environment['subject']
-        if not environment['link'].startswith("http"):
-            environment['link'] = f"https://{settings.SERVER_NAME}/{environment['link'].lstrip('/')}"
-    print('*********************** SEND EMAIL 2')
-    print(settings.EMAILS_ENABLED)
-    print(settings.SERVER_NAME)
-    print(team)
-    print(type)
-    print(environment)
+        # https://demo.greengage-project.eu/dashboard/coproductionprocesses/f878166c-4241-482a-95da-44444f1000c4/93a3f6c4-5f00-44e0-ad73-b165cb3b72b9/view
+        environment["link"] = 'https://{server}/dashboard/coproductionprocesses/{processId}/{asset_id}/view'.format(
+            server=settings.SERVER_NAME,
+            processId=environment['processId'],
+            asset_id=environment['asset_id'])
+        
     with open(Path(settings.EMAIL_TEMPLATES_DIR) / "{type}.html".format(type=type)) as f:
         template_str = f.read()
     template = JinjaTemplate(template_str)
